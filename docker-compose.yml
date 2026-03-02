@@ -1,0 +1,271 @@
+# =============================================================
+# docker-compose.yml — Stack completo de FinanzApp
+# =============================================================
+# Servicios que levanta este compose:
+#
+#   1. postgres        — Base de datos PostgreSQL 16
+#   2. finanzapp-api   — Backend Spring Boot (API REST + JWT)
+#   3. finanzapp-mcp   — Servidor MCP (TypeScript/Node) que
+#                        expone herramientas para Claude u otro
+#                        asistente conversacional
+#
+# Uso rápido:
+#   cp .env.example .env          # ajusta las variables
+#   docker compose up -d --build  # construye y levanta todo
+#   docker compose logs -f        # ver logs en tiempo real
+#   docker compose down -v        # parar y borrar volúmenes
+# =============================================================
+
+version: '3.8'
+
+# ─────────────────────────────────────────────────────────────
+# Variables de entorno con valores por defecto razonables.
+# Crea un archivo .env en esta misma carpeta para sobrescribirlas.
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ===========================================================
+  # 1. PostgreSQL — Capa de persistencia
+  # ===========================================================
+  # Almacena usuarios, ingresos, gastos, ahorros, metas y
+  # dispositivos. La extensión uuid-ossp se habilita mediante
+  # el script docker/init-db/01-init.sql; las tablas las crea
+  # Hibernate automáticamente (ddl-auto: update).
+  # ===========================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: finanzapp-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: finanzapp
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      # Persistencia de datos entre reinicios
+      - postgres_data:/var/lib/postgresql/data
+      # Scripts DDL/DML de inicialización (se ejecutan una sola vez)
+      - ./finanzapp/docker/init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d finanzapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - finanzapp-network
+
+  # ===========================================================
+  # 2. finanzapp-api — Backend Java/Spring Boot
+  # ===========================================================
+  # API REST con arquitectura hexagonal que expone:
+  #   POST /api/v1/auth/login          → Login email/password
+  #   POST /api/v1/auth/login/whatsapp → Login por WhatsApp OTP
+  #   POST /api/v1/auth/register       → Registro de usuario
+  #   GET/POST /api/v1/ingresos        → Gestión de ingresos
+  #   GET/POST /api/v1/gastos          → Gestión de gastos
+  #   GET/POST /api/v1/ahorros         → Gestión de ahorros
+  #   GET/POST /api/v1/metas           → Metas financieras
+  #   GET      /api/v1/balance         → Balance general/por período
+  #   GET/POST /api/v1/dispositivos    → Dispositivos WhatsApp
+  #   GET      /actuator/health        → Health check
+  #   GET      /swagger-ui.html        → Documentación OpenAPI
+  #
+  # Seguridad: JWT (Bearer token). Todas las rutas excepto
+  #   /auth/** requieren Authorization: Bearer <token>.
+  # ===========================================================
+  finanzapp-api:
+    build:
+      context: ./finanzapp
+      dockerfile: Dockerfile
+    container_name: finanzapp-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Base de datos
+      DATABASE_URL: jdbc:postgresql://postgres:5432/finanzapp
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-MiClaveSecretaParaJWTQueTieneAlMenos256BitsDeSeguridad2024FinanzApp}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+      # Hibernate
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
+      JPA_SHOW_SQL: ${JPA_SHOW_SQL:-false}
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # JVM tuning
+      JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx512m}
+      # Mail SMTP
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-finanzapp@gmail.com}
+      # Twilio SMS
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - finanzapp-network
+
+  # ===========================================================
+  # 3. finanzapp-mcp — Servidor MCP (Model Context Protocol)
+  # ===========================================================
+  # Servidor Node.js/TypeScript que implementa el protocolo MCP
+  # y expone herramientas para que Claude (u otro LLM) gestione
+  # las finanzas del usuario mediante lenguaje natural.
+  #
+  # Herramientas disponibles:
+  #   crearIngreso / obtenerIngresos / obtenerIngresosPorPeriodo
+  #   crearEgreso  / obtenerGastos   / obtenerGastosPorPeriodo
+  #                                  / obtenerDesgloseGastos
+  #   crearAhorro  / obtenerAhorros
+  #   crearMeta    / obtenerMetas    / registrarProgresoMeta
+  #   obtenerBalance / obtenerBalancePorPeriodo
+  #   obtenerResumenFinanciero / obtenerAnalisisFinanciero
+  #
+  # Transporte: stdio (el LLM lanza el proceso y se comunica
+  # mediante stdin/stdout con mensajes JSON-RPC).
+  # En este compose se ejecuta en modo "long-running" para que
+  # Docker lo mantenga vivo; el LLM lo invoca externamente.
+  #
+  # Variables de entorno requeridas:
+  #   FINANZAPP_API_URL   → URL del backend (por defecto apunta
+  #                         al servicio finanzapp-api interno)
+  #   FINANZAPP_JWT_TOKEN → Token JWT del usuario autenticado
+  # ===========================================================
+  finanzapp-mcp:
+    build:
+      context: ./finanzapp-mcp
+      dockerfile: Dockerfile
+    container_name: finanzapp-mcp
+    restart: unless-stopped
+    depends_on:
+      finanzapp-api:
+        condition: service_healthy
+    environment:
+      # Apunta al servicio interno del backend
+      FINANZAPP_API_URL: ${FINANZAPP_API_URL:-http://finanzapp-api:8080/api/v1}
+      # Token JWT: debe obtenerse previamente con POST /auth/login
+      FINANZAPP_JWT_TOKEN: ${FINANZAPP_JWT_TOKEN:-}
+      # Número WhatsApp del usuario (opcional)
+      FINANZAPP_WHATSAPP_NUMBER: ${FINANZAPP_WHATSAPP_NUMBER:-}
+      # Timeout en ms para las peticiones al backend
+      FINANZAPP_TIMEOUT: ${FINANZAPP_TIMEOUT:-30000}
+      NODE_ENV: production
+    networks:
+      - finanzapp-network
+    # El servidor MCP usa stdio; stdin_open + tty permiten que
+    # el proceso permanezca activo aunque no haya un LLM conectado.
+    stdin_open: true
+    tty: true
+
+  # ===========================================================
+  # 4. finanzapp-web — Frontend Next.js
+  # ===========================================================
+  # Aplicacion web con Next.js 16, Shadcn UI y Tailwind CSS.
+  # Interfaz de usuario para gestionar finanzas personales:
+  # ingresos, gastos, ahorros, metas y dispositivos WhatsApp.
+  #
+  # Acceso: http://localhost:3000
+  # ===========================================================
+  finanzapp-web:
+    build:
+      context: ./finanzapp-web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api/v1}
+    container_name: finanzapp-web
+    restart: unless-stopped
+    depends_on:
+      finanzapp-api:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api/v1}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    networks:
+      - finanzapp-network
+
+  # ===========================================================
+  # 5. n8n — Motor de automatización de flujos de trabajo
+  # ===========================================================
+  # Orquesta la integración entre WhatsApp (Meta Cloud API),
+  # el agente de IA (Claude via Anthropic) y el backend de
+  # FinanzApp. Los flujos de trabajo se crean visualmente en
+  # la interfaz de n8n y se pueden exportar/importar como JSON.
+  #
+  # Acceso a la interfaz web: http://localhost:5678
+  #
+  # Variables de entorno requeridas (configurar en .env):
+  #   N8N_ENCRYPTION_KEY    → Clave para cifrar credenciales
+  #   N8N_WEBHOOK_URL       → URL pública donde WhatsApp envía
+  #                           los webhooks (usar ngrok en local)
+  #   WHATSAPP_PHONE_NUMBER_ID  → ID del número en Meta API
+  #   WHATSAPP_ACCESS_TOKEN     → Token de acceso Meta API
+  #   WHATSAPP_VERIFY_TOKEN     → Token de verificación webhook
+  #   ANTHROPIC_API_KEY         → Clave API de Anthropic/Claude
+  # ===========================================================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: finanzapp-n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      # Red y acceso
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      # URL pública para que Meta Cloud API alcance el webhook.
+      # En desarrollo local, usar el túnel de ngrok aquí.
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678}
+      N8N_EDITOR_BASE_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678}
+      # Clave de cifrado para las credenciales guardadas en n8n.
+      # IMPORTANTE: Cambiar este valor antes de pasar a producción.
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-cambiar-esto-en-produccion-256bits}
+      # Zona horaria para los cron jobs y logs
+      GENERIC_TIMEZONE: America/Bogota
+      TZ: America/Bogota
+      # Desactiva la telemetría para entornos de desarrollo
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+    volumes:
+      # Persistencia de workflows, credenciales y configuración
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      finanzapp-api:
+        condition: service_healthy
+    networks:
+      - finanzapp-network
+
+# =============================================================
+# Volúmenes con nombre
+# =============================================================
+volumes:
+  postgres_data:
+    driver: local
+  n8n_data:
+    driver: local
+
+# =============================================================
+# Red interna compartida por todos los servicios
+# =============================================================
+networks:
+  finanzapp-network:
+    driver: bridge
+

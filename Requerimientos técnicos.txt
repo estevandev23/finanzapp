@@ -1,0 +1,251 @@
+Sistema de Finanzas Personales
+
+Backend Spring Boot – Arquitectura Hexagonal – PostgreSQL
+
+⸻
+
+1. Descripción General del Sistema
+
+El sistema es una aplicación de finanzas personales cuyo objetivo es permitir al usuario llevar un control completo y claro de su dinero, incluyendo:
+	•	Ingresos
+	•	Gastos
+	•	Ahorros
+	•	Metas financieras
+	•	Balance general
+
+La solución estará compuesta por:
+	•	Backend: API REST desarrollada en Spring Boot bajo arquitectura hexagonal
+	•	Base de datos: PostgreSQL
+	•	Frontend: Cliente (web / WhatsApp / otros) con enfoque en usabilidad y experiencia de usuario
+	•	Integración externa: WhatsApp mediante N8N
+
+⸻
+
+2. Arquitectura del Sistema
+
+2.1 Arquitectura Hexagonal (Ports & Adapters)
+
+El backend se desarrollará siguiendo el patrón de Arquitectura Hexagonal, con el objetivo de:
+	•	Desacoplar la lógica de negocio de frameworks y tecnologías
+	•	Facilitar mantenimiento, pruebas y escalabilidad
+	•	Permitir múltiples interfaces de entrada (REST, WhatsApp, futuros canales)
+
+Capas principales:
+🔹 Dominio
+	•	Contiene la lógica de negocio pura
+	•	Entidades:
+	•	Usuario
+	•	Ingreso
+	•	Gasto
+	•	Ahorro
+	•	Meta financiera
+	•	Balance
+	•	Reglas de negocio (ej. cálculo de disponible, ahorro, balance)
+	•	No depende de Spring, ni de base de datos, ni de frameworks externos
+
+🔹 Aplicación
+	•	Casos de uso (Use Cases)
+	•	Orquesta la lógica del dominio
+	•	Define puertos de entrada (interfaces para casos de uso)
+	•	Define puertos de salida (repositorios, servicios externos)
+
+🔹 Infraestructura
+	•	Implementaciones técnicas:
+	•	Controladores REST
+	•	Repositorios JPA
+	•	Configuración de seguridad (Spring Security, JWT)
+	•	Integración con WhatsApp / N8N
+	•	Adaptadores que conectan con:
+	•	PostgreSQL
+	•	JWT
+	•	Servicios externos
+
+⸻
+
+3. Base de Datos
+
+3.1 Motor de Base de Datos
+	•	PostgreSQL
+	•	Justificación:
+	•	Ligera y eficiente
+	•	Open Source y gratuita
+	•	Fácil de desplegar
+	•	Excelente soporte con Spring Boot
+	•	Soporta bien consultas por periodos y agregaciones financieras
+
+⸻
+
+3.2 Consideraciones de Persistencia
+	•	Uso de:
+	•	Spring Data JPA como adaptador de persistencia
+	•	Todas las entidades del dominio:
+	•	Se mapearán a tablas relacionales
+	•	Separación clara:
+	•	Dominio ≠ Entidades JPA (opcional según diseño)
+
+⸻
+
+4. Autenticación y Seguridad
+
+4.1 Autenticación General
+	•	API REST protegida con JWT
+	•	Spring Security como framework de seguridad
+	•	Todo endpoint financiero requiere token válido
+
+⸻
+
+4.2 Autenticación vía WhatsApp
+	•	Integración mediante N8N
+	•	Autenticación basada en dispositivo
+	•	Se manejará una tabla específica para:
+	•	Dispositivos registrados
+	•	Sesiones activas
+	•	Tokens asociados
+
+Reglas:
+	•	Un token está asociado a:
+	•	Usuario
+	•	Dispositivo
+	•	Si la sesión expira:
+	•	Se requiere reautenticación
+	•	Dispositivos nuevos:
+	•	Deben ser registrados explícitamente
+
+⸻
+
+5. Gestión de Ingresos
+
+Funcionalidades:
+	•	Registrar ingresos
+	•	Clasificar ingresos:
+	•	Trabajo principal
+	•	Trabajo extra
+	•	Ganancias adicionales
+	•	Descripción opcional
+	•	Fecha de registro automática
+
+Reglas:
+	•	El ingreso incrementa el dinero disponible
+	•	Puede asociarse un monto parcial a ahorro
+
+⸻
+
+6. Gestión de Ahorros
+
+Funcionalidades:
+	•	Registro manual de ahorros
+	•	Ahorros asociados a ingresos
+	•	Consulta de:
+	•	Total ahorrado
+	•	Ahorros por periodo
+	•	Historial de ahorros
+
+Reglas:
+	•	El dinero ahorrado:
+	•	No es disponible para gasto
+	•	Se maneja en un fondo separado
+
+⸻
+
+7. Gestión de Gastos
+
+Funcionalidades:
+	•	Registrar gastos
+	•	Clasificación de gastos:
+	•	Comida
+	•	Pareja
+	•	Compras
+	•	Otros
+	•	Descripción opcional
+
+Reglas:
+	•	El gasto reduce el dinero disponible
+	•	No es obligatorio manejar gastos fijos
+
+⸻
+
+8. Gestión de Metas Financieras
+
+Funcionalidades:
+	•	Crear metas financieras
+	•	Definir monto objetivo
+	•	Registrar progreso manual
+	•	Consultar avance por periodo
+
+Métricas:
+	•	Porcentaje de avance
+	•	Monto restante
+
+⸻
+
+9. Reportes y Consultas por Periodo
+
+El sistema deberá permitir consultas por:
+	•	Mes
+	•	Rango de fechas personalizado
+
+Consultas:
+	•	Total gastado
+	•	Total ganado
+	•	Total ahorrado
+	•	Desglose por categorías
+
+⸻
+
+10. Balance General
+
+El backend debe calcular y exponer:
+	•	Dinero disponible actual
+	•	Total ahorrado
+	•	Total gastado histórico
+	•	Total ganado histórico
+
+⸻
+
+11. Requerimientos de Frontend (UX/UI)
+
+Aunque este documento se centra en backend, el frontend debe considerar:
+
+11.1 Usabilidad
+	•	Interfaz clara y simple
+	•	Flujo rápido para:
+	•	Registrar ingresos
+	•	Registrar gastos
+	•	Registrar ahorros
+	•	Mínimos pasos para acciones frecuentes
+
+⸻
+
+11.2 Experiencia de Usuario (UX)
+	•	Visualización clara del balance general
+	•	Indicadores visuales:
+	•	Dinero disponible
+	•	Ahorros
+	•	Gastos
+	•	Feedback inmediato al usuario al registrar movimientos
+
+⸻
+
+11.3 UI (Interfaz)
+	•	Diseño intuitivo y limpio
+	•	Uso de gráficos:
+	•	Gastos por categoría
+	•	Ingresos vs gastos por mes
+	•	Diseño responsive (pensando en móvil / WhatsApp)
+
+⸻
+
+11.4 Integración con Backend
+	•	Consumo de API REST con JWT
+	•	Manejo de sesiones
+	•	Manejo de errores claros (mensajes amigables)
+
+⸻
+
+12. Consideraciones Finales
+	•	Arquitectura preparada para:
+	•	Nuevos canales de entrada
+	•	Nuevas reglas financieras
+	•	Backend desacoplado del frontend
+	•	PostgreSQL como base sólida y rentable
+	•	Diseño pensado para evolución futura

@@ -1,0 +1,467 @@
+{
+  "name": "FinanzApp - Agente Financiero WhatsApp (Evolution API)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000001",
+      "name": "Webhook Evolution API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [80, 400],
+      "webhookId": "finanzapp-evolution-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parsea el payload enviado por Evolution API al webhook.\n// Evolution API envia un POST por cada evento de WhatsApp.\nconst payload = $input.first().json.body;\n\n// Solo procesar eventos de mensajes nuevos entrantes\nif (payload?.event !== 'messages.upsert') {\n  return [{ json: { skip: true, motivo: `Evento ignorado: ${payload?.event}` } }];\n}\n\nconst data = payload?.data;\nconst key = data?.key;\n\n// Ignorar mensajes enviados por nosotros mismos (fromMe)\nif (key?.fromMe === true) {\n  return [{ json: { skip: true, motivo: 'Mensaje propio (fromMe)' } }];\n}\n\nconst remoteJid = key?.remoteJid || '';\n\n// Ignorar mensajes de grupos (@g.us); solo procesar chats individuales\nif (remoteJid.endsWith('@g.us')) {\n  return [{ json: { skip: true, motivo: 'Mensaje de grupo' } }];\n}\n\n// Extraer el numero limpio eliminando el sufijo @s.whatsapp.net\nconst telefono = remoteJid.split('@')[0];\n\nconst messageType = data?.messageType;\nconst message = data?.message;\n\n// Extraer el texto segun el tipo de mensaje de Evolution API\nlet texto = null;\nif (messageType === 'conversation') {\n  texto = message?.conversation ?? null;\n} else if (messageType === 'extendedTextMessage') {\n  texto = message?.extendedTextMessage?.text ?? null;\n}\n\nreturn [{\n  json: {\n    telefono,\n    remoteJid,\n    tipo: messageType,\n    texto,\n    contacto: data?.pushName || telefono,\n    messageId: key?.id,\n    instanceName: payload?.instance,\n    skip: !texto\n  }\n}];"
+      },
+      "id": "fa000002-0000-0000-0000-000000000002",
+      "name": "Extraer Datos Mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-texto-valido",
+              "leftValue": "={{ $json.texto }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ],
+          "combineOperation": "all"
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000003",
+      "name": "Es mensaje de texto entrante?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [560, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"ignored\" }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "fa000002-0000-0000-0000-000000000004",
+      "name": "Ignorar y Responder 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [800, 560]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Extraer Datos Mensaje').first().json.texto }}",
+        "options": {
+          "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente que ayuda a los usuarios a gestionar sus finanzas personales a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero de WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nIMPORTANTE: Cuando uses cualquier herramienta que requiera el parametro 'numeroWhatsapp', SIEMPRE usa exactamente el valor: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n\nCAPACIDADES DISPONIBLES:\n- Consultar balance general (ingresos, gastos, ahorros, dinero disponible)\n- Ver resumen del mes actual con desglose de gastos por categoria\n- Registrar ingresos con su categoria y descripcion\n- Registrar gastos con su categoria y descripcion\n- Registrar ahorros, opcionalmente asociados a una meta\n- Consultar metas financieras activas y su porcentaje de avance\n\nCATEGORIAS DE INGRESOS (usar exactamente una de estas):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente una de estas):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS\n\nINSTRUCCIONES DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, con un tono amigable, claro y conciso\n- Si los datos para registrar un movimiento son claros en el mensaje, procedie directamente sin confirmar\n- Si falta un dato esencial (por ejemplo el monto), pregunta por el antes de actuar\n- Si el backend responde con error de 'Dispositivo no encontrado', indica al usuario que debe registrar su numero en la aplicacion movil de FinanzApp primero\n- Usa SOLO texto plano en tus respuestas, sin markdown, asteriscos ni formato especial, porque el mensaje se envia por WhatsApp\n- Los montos se manejan en pesos colombianos (COP)"
+        }
+      },
+      "id": "fa000002-0000-0000-0000-000000000005",
+      "name": "Agente Financiero",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "model": "claude-3-5-sonnet-20241022",
+        "options": {
+          "maxTokens": 1024,
+          "temperature": 0.3
+        }
+      },
+      "id": "fa000002-0000-0000-0000-000000000006",
+      "name": "Claude 3.5 Sonnet",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [580, 620],
+      "credentials": {
+        "anthropicApi": {
+          "id": "CONFIGURAR",
+          "name": "Anthropic API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "consultarBalance",
+        "description": "Consulta el balance financiero general del usuario: total de ingresos, total de gastos, total de ahorros y dinero disponible actualmente. Usar cuando el usuario pregunte cuanto dinero tiene, su saldo, su balance o su situacion financiera general.",
+        "method": "GET",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/balance",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "numeroWhatsapp",
+              "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000007",
+      "name": "Tool: Consultar Balance",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [400, 640]
+    },
+    {
+      "parameters": {
+        "name": "consultarResumenMes",
+        "description": "Consulta el resumen financiero del mes actual: ingresos totales, gastos totales, ahorros y desglose de gastos por categoria. Usar cuando el usuario pregunte por el mes, este mes, el mes actual o quiera saber como lleva sus finanzas del mes.",
+        "method": "GET",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/resumen-mes",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "numeroWhatsapp",
+              "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000008",
+      "name": "Tool: Resumen del Mes",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [400, 780]
+    },
+    {
+      "parameters": {
+        "name": "registrarIngreso",
+        "description": "Registra un nuevo ingreso de dinero para el usuario. Parametros requeridos: monto (numero), categoria (TRABAJO_PRINCIPAL | TRABAJO_EXTRA | GANANCIAS_ADICIONALES | INVERSIONES | OTROS). Parametro opcional: descripcion (texto libre). Usar cuando el usuario diga que recibio dinero, le pagaron, gano algo o hizo un deposito.",
+        "method": "POST",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/ingreso",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "numeroWhatsapp",
+              "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+            },
+            {
+              "name": "monto",
+              "value": ""
+            },
+            {
+              "name": "categoria",
+              "value": ""
+            },
+            {
+              "name": "descripcion",
+              "value": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000009",
+      "name": "Tool: Registrar Ingreso",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [400, 920]
+    },
+    {
+      "parameters": {
+        "name": "registrarGasto",
+        "description": "Registra un nuevo gasto o egreso de dinero para el usuario. Parametros requeridos: monto (numero), categoria (COMIDA | PAREJA | COMPRAS | TRANSPORTE | SERVICIOS | ENTRETENIMIENTO | SALUD | EDUCACION | OTROS). Parametro opcional: descripcion (texto libre). Usar cuando el usuario diga que gasto, pago, compro algo o tuvo una salida de dinero.",
+        "method": "POST",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/gasto",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "numeroWhatsapp",
+              "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+            },
+            {
+              "name": "monto",
+              "value": ""
+            },
+            {
+              "name": "categoria",
+              "value": ""
+            },
+            {
+              "name": "descripcion",
+              "value": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000010",
+      "name": "Tool: Registrar Gasto",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [400, 1060]
+    },
+    {
+      "parameters": {
+        "name": "registrarAhorro",
+        "description": "Registra un nuevo ahorro de dinero para el usuario. Parametro requerido: monto (numero). Parametros opcionales: descripcion (texto libre), metaId (UUID de la meta financiera a la cual asociar este ahorro). Usar cuando el usuario quiera ahorrar, apartar o guardar dinero.",
+        "method": "POST",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/ahorro",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "numeroWhatsapp",
+              "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+            },
+            {
+              "name": "monto",
+              "value": ""
+            },
+            {
+              "name": "descripcion",
+              "value": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000011",
+      "name": "Tool: Registrar Ahorro",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [400, 1200]
+    },
+    {
+      "parameters": {
+        "name": "consultarMetas",
+        "description": "Consulta las metas financieras activas del usuario con su progreso: cuanto ha ahorrado de cada meta y el porcentaje de avance. Usar cuando el usuario pregunte por sus metas, objetivos de ahorro o el progreso de sus metas.",
+        "method": "GET",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/metas",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "numeroWhatsapp",
+              "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000012",
+      "name": "Tool: Consultar Metas",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [400, 1340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE_NAME }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $('Extraer Datos Mensaje').first().json.telefono }}\",\n  \"text\": {{ JSON.stringify($json.output) }}\n}",
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000013",
+      "name": "Enviar Respuesta Evolution API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1060, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"ok\" }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "fa000002-0000-0000-0000-000000000014",
+      "name": "Responder 200 OK a Evolution",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1300, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Evolution API": {
+      "main": [
+        [
+          {
+            "node": "Extraer Datos Mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Datos Mensaje": {
+      "main": [
+        [
+          {
+            "node": "Es mensaje de texto entrante?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Es mensaje de texto entrante?": {
+      "main": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignorar y Responder 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Financiero": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta Evolution API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Respuesta Evolution API": {
+      "main": [
+        [
+          {
+            "node": "Responder 200 OK a Evolution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude 3.5 Sonnet": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Consultar Balance": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Resumen del Mes": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Registrar Ingreso": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Registrar Gasto": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Registrar Ahorro": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Consultar Metas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "finanzapp-local"
+  }
+}

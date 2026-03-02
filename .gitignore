@@ -1,0 +1,22 @@
+# Variables de entorno (nunca subir al repositorio)
+.env
+.env.local
+.env.*.local
+
+# Submodule directories (gestionados por git submodules)
+finanzapp/
+finanzapp-mcp/
+finanzapp-web/
+
+# Archivos temporales
+*.zip
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
