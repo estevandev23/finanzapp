@@ -3,11 +3,6 @@
 .env.local
 .env.*.local
 
-# Submodule directories (gestionados por git submodules)
-finanzapp/
-finanzapp-mcp/
-finanzapp-web/
-
 # Archivos temporales
 *.zip
 *.log
