@@ -1,0 +1,9 @@
+[submodule "finanzapp"]
+	path = finanzapp
+	url = https://github.com/estevandev23/finanzapp-api.git
+[submodule "finanzapp-mcp"]
+	path = finanzapp-mcp
+	url = https://github.com/estevandev23/finanzapp-mcp.git
+[submodule "finanzapp-web"]
+	path = finanzapp-web
+	url = https://github.com/estevandev23/finanzapp-web.git
