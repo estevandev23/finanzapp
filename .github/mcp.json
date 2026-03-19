@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "finanzapp": {
+      "command": "node",
+      "args": ["./finanzapp-mcp/dist/index.js"],
+      "env": {
+        "FINANZAPP_API_URL": "https://finanzappapi.estevanv.dev/api/v1",
+        "FINANZAPP_JWT_TOKEN": "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiIzYTQ4Yjg4ZS01MGIzLTQ4ZGYtODgzMy03OTc3NzI3ZmFkN2EiLCJzdWIiOiJmaW5hbnphcHBzdHVkaW9AZ21haWwuY29tIiwiaWF0IjoxNzczODUwMzk1LCJleHAiOjE3NzM5MzY3OTV9.xJoMf8FtamH21f7aQXBGnSOluXUo5pqqo5_xVSici7o"
+      }
+    },
+    "n8n": {
+      "type": "http",
+      "url": "https://n8n.estevanv.dev/mcp-server/http"
+    }
+  }
+}

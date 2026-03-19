@@ -16,8 +16,6 @@
 #   docker compose down -v        # parar y borrar volúmenes
 # =============================================================
 
-version: '3.8'
-
 # ─────────────────────────────────────────────────────────────
 # Variables de entorno con valores por defecto razonables.
 # Crea un archivo .env en esta misma carpeta para sobrescribirlas.
@@ -39,8 +37,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: finanzapp
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
@@ -49,7 +47,7 @@ services:
       # Scripts DDL/DML de inicialización (se ejecutan una sola vez)
       - ./finanzapp/docker/init-db:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d finanzapp"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d finanzapp"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -86,12 +84,14 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      # Puerto del servidor (debe coincidir con EXPOSE y healthcheck)
+      SERVER_PORT: 8080
       # Base de datos
       DATABASE_URL: jdbc:postgresql://postgres:5432/finanzapp
-      DB_USERNAME: ${DB_USERNAME:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       # JWT
-      JWT_SECRET: ${JWT_SECRET:-MiClaveSecretaParaJWTQueTieneAlMenos256BitsDeSeguridad2024FinanzApp}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
       # Hibernate
@@ -106,19 +106,22 @@ services:
       MAIL_PORT: ${MAIL_PORT:-587}
       MAIL_USERNAME: ${MAIL_USERNAME:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-      MAIL_FROM: ${MAIL_FROM:-finanzapp@gmail.com}
+      MAIL_FROM: ${MAIL_FROM:-finanzappstudio@gmail.com}
       # Twilio SMS
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
       TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
     ports:
-      - "${API_PORT:-8080}:8080"
+      - "${API_PORT}:8080"
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 90s
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - finanzapp-network
 
@@ -160,10 +163,9 @@ services:
     environment:
       # Apunta al servicio interno del backend
       FINANZAPP_API_URL: ${FINANZAPP_API_URL:-http://finanzapp-api:8080/api/v1}
-      # Token JWT: debe obtenerse previamente con POST /auth/login
+      # Token JWT: opcional, se usa solo para Claude Desktop u otros clientes MCP directos.
+      # En el flujo WhatsApp/n8n la autenticacion se gestiona por sesiones en la BD.
       FINANZAPP_JWT_TOKEN: ${FINANZAPP_JWT_TOKEN:-}
-      # Número WhatsApp del usuario (opcional)
-      FINANZAPP_WHATSAPP_NUMBER: ${FINANZAPP_WHATSAPP_NUMBER:-}
       # Timeout en ms para las peticiones al backend
       FINANZAPP_TIMEOUT: ${FINANZAPP_TIMEOUT:-30000}
       NODE_ENV: production
@@ -195,16 +197,22 @@ services:
       finanzapp-api:
         condition: service_healthy
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api/v1}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://finanzappapi.estevanv.dev/api/v1}
+      AUTH_URL: ${AUTH_URL:-https://finanzappweb.estevanv.dev}
+      AUTH_SECRET: ${NEXTAUTH_SECRET:-cambiar-esto-en-produccion}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_PORT:-}:3000"
     networks:
       - finanzapp-network
 
   # ===========================================================
   # 5. n8n — Motor de automatización de flujos de trabajo
   # ===========================================================
-  # Orquesta la integración entre WhatsApp (Meta Cloud API),
+  # Orquesta la integración entre WhatsApp (Evolution API),
   # el agente de IA (Claude via Anthropic) y el backend de
   # FinanzApp. Los flujos de trabajo se crean visualmente en
   # la interfaz de n8n y se pueden exportar/importar como JSON.
@@ -213,30 +221,25 @@ services:
   #
   # Variables de entorno requeridas (configurar en .env):
   #   N8N_ENCRYPTION_KEY    → Clave para cifrar credenciales
-  #   N8N_WEBHOOK_URL       → URL pública donde WhatsApp envía
-  #                           los webhooks (usar ngrok en local)
-  #   WHATSAPP_PHONE_NUMBER_ID  → ID del número en Meta API
-  #   WHATSAPP_ACCESS_TOKEN     → Token de acceso Meta API
-  #   WHATSAPP_VERIFY_TOKEN     → Token de verificación webhook
-  #   ANTHROPIC_API_KEY         → Clave API de Anthropic/Claude
+  #   N8N_WEBHOOK_URL       → URL pública donde Evolution API
+  #                           envía los webhooks
+  #   ANTHROPIC_API_KEY     → Clave API de Anthropic/Claude
   # ===========================================================
   n8n:
     image: n8nio/n8n:latest
     container_name: finanzapp-n8n
     restart: unless-stopped
     ports:
-      - "${N8N_PORT:-5678}:5678"
+      - "${N8N_PORT}:5678"
     environment:
       # Red y acceso
       N8N_HOST: 0.0.0.0
       N8N_PORT: 5678
       N8N_PROTOCOL: http
-      # URL pública para que Meta Cloud API alcance el webhook.
-      # En desarrollo local, usar el túnel de ngrok aquí.
+      # URL pública para que Evolution API alcance el webhook.
       WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678}
       N8N_EDITOR_BASE_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678}
       # Clave de cifrado para las credenciales guardadas en n8n.
-      # IMPORTANTE: Cambiar este valor antes de pasar a producción.
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-cambiar-esto-en-produccion-256bits}
       # Zona horaria para los cron jobs y logs
       GENERIC_TIMEZONE: America/Bogota
@@ -244,12 +247,115 @@ services:
       # Desactiva la telemetría para entornos de desarrollo
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      # Variables de Evolution API accesibles desde los workflows
+      EVOLUTION_API_URL: http://evolution-api:8080
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      EVOLUTION_INSTANCE_NAME: ${EVOLUTION_INSTANCE_NAME:-finanzapp}
     volumes:
       # Persistencia de workflows, credenciales y configuración
       - n8n_data:/home/node/.n8n
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     depends_on:
       finanzapp-api:
         condition: service_healthy
+    networks:
+      - finanzapp-network
+
+  # ===========================================================
+  # 6. Evolution API — Gateway de WhatsApp
+  # ===========================================================
+  # Permite conectar WhatsApp Web a n8n para recibir y enviar
+  # mensajes. Se conecta via WebSocket a los servidores de
+  # WhatsApp y expone una API REST para gestionar instancias,
+  # enviar mensajes y configurar webhooks.
+  #
+  # Acceso a la interfaz: http://localhost:8081
+  # Documentación: https://doc.evolution-api.com
+  # ===========================================================
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: evolution-api
+    restart: unless-stopped
+    ports:
+      - "${EVOLUTION_PORT:-8081}:8080"
+    environment:
+      # Servidor
+      SERVER_TYPE: http
+      SERVER_PORT: 8080
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-https://evolution.estevanv.dev}
+      # Autenticación
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "true"
+      # Base de datos (usa la misma instancia de PostgreSQL)
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/evolution?schema=public
+      DATABASE_CONNECTION_CLIENT_NAME: evolution_exchange
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      DATABASE_SAVE_MESSAGE_UPDATE: "true"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      DATABASE_SAVE_DATA_LABELS: "true"
+      DATABASE_SAVE_DATA_HISTORIC: "true"
+      DATABASE_SAVE_IS_ON_WHATSAPP: "true"
+      DATABASE_SAVE_IS_ON_WHATSAPP_DAYS: "7"
+      DATABASE_DELETE_MESSAGE: "true"
+      # Cache con Redis
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://evolution-redis:6379/6
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      # QR Code
+      QRCODE_LIMIT: "30"
+      QRCODE_COLOR: "#175197"
+      # Instancias
+      DEL_INSTANCE: "false"
+      # Sesión WhatsApp
+      CONFIG_SESSION_PHONE_CLIENT: FinanzApp
+      CONFIG_SESSION_PHONE_NAME: Chrome
+      # Logs
+      LOG_LEVEL: ERROR,WARN,DEBUG,INFO,LOG,VERBOSE,DARK,WEBHOOKS
+      LOG_COLOR: "true"
+      LOG_BAILEYS: error
+      # CORS
+      CORS_ORIGIN: "*"
+      CORS_METHODS: "GET,POST,PUT,DELETE"
+      CORS_CREDENTIALS: "true"
+      # Zona horaria
+      TZ: America/Bogota
+      # Idioma
+      LANGUAGE: en
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - evolution_instances:/evolution/instances
+    depends_on:
+      postgres:
+        condition: service_healthy
+      evolution-redis:
+        condition: service_healthy
+    networks:
+      - finanzapp-network
+
+  # ===========================================================
+  # 7. Redis — Cache para Evolution API
+  # ===========================================================
+  evolution-redis:
+    image: redis:7-alpine
+    container_name: evolution-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - evolution_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - finanzapp-network
 
@@ -260,6 +366,10 @@ volumes:
   postgres_data:
     driver: local
   n8n_data:
+    driver: local
+  evolution_instances:
+    driver: local
+  evolution_redis:
     driver: local
 
 # =============================================================
