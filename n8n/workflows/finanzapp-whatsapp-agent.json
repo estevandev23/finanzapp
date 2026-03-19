@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-19T00:17:56.392Z",
+  "updatedAt": "2026-03-19T04:14:02.623Z",
   "createdAt": "2026-03-18T22:01:29.530Z",
   "id": "JL7XSvzAgrCHaFol",
   "name": "FinanzApp - Agente Financiero WhatsApp (Evolution API)",
@@ -26,7 +26,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload = $input.first().json.body;\nif (payload?.event !== 'messages.upsert') {\n  return [{ json: { skip: true, motivo: `Evento ignorado: ${payload?.event}` } }];\n}\nconst data = payload?.data;\nconst key = data?.key;\nif (key?.fromMe === true) {\n  return [{ json: { skip: true, motivo: 'Mensaje propio (fromMe)' } }];\n}\nconst remoteJid = key?.remoteJid || '';\nif (remoteJid.endsWith('@g.us')) {\n  return [{ json: { skip: true, motivo: 'Mensaje de grupo' } }];\n}\nconst telefono = remoteJid.split('@')[0];\nconst messageType = data?.messageType;\nconst message = data?.message;\nlet texto = null;\nif (messageType === 'conversation') {\n  texto = message?.conversation ?? null;\n} else if (messageType === 'extendedTextMessage') {\n  texto = message?.extendedTextMessage?.text ?? null;\n}\nreturn [{\n  json: {\n    telefono,\n    remoteJid,\n    tipo: messageType,\n    texto,\n    contacto: data?.pushName || telefono,\n    messageId: key?.id,\n    instanceName: payload?.instance,\n    skip: !texto\n  }\n}];"
+        "jsCode": "const payload = $input.first().json.body;\nif (payload?.event !== 'messages.upsert') {\n  return [{ json: { skip: true, motivo: `Evento ignorado: ${payload?.event}` } }];\n}\nconst data = payload?.data;\nconst key = data?.key;\nif (key?.fromMe === true) {\n  return [{ json: { skip: true, motivo: 'Mensaje propio (fromMe)' } }];\n}\nconst remoteJid = key?.remoteJid || '';\nif (remoteJid.endsWith('@g.us')) {\n  return [{ json: { skip: true, motivo: 'Mensaje de grupo' } }];\n}\nconst telefono = remoteJid.split('@')[0];\nconst messageType = data?.messageType;\nconst message = data?.message;\nlet texto = null;\nlet esAudio = false;\nif (messageType === 'conversation') {\n  texto = message?.conversation ?? null;\n} else if (messageType === 'extendedTextMessage') {\n  texto = message?.extendedTextMessage?.text ?? null;\n} else if (messageType === 'audioMessage') {\n  esAudio = true;\n}\nreturn [{\n  json: {\n    telefono,\n    remoteJid,\n    tipo: messageType,\n    texto,\n    esAudio,\n    contacto: data?.pushName || telefono,\n    messageId: key?.id,\n    instanceName: payload?.instance,\n    skip: !texto && !esAudio\n  }\n}];"
       },
       "id": "fa000002-0000-0000-0000-000000000002",
       "name": "Extraer Datos Mensaje",
@@ -49,21 +49,22 @@
           "conditions": [
             {
               "id": "8b6d0029-9226-4de9-860f-196e933f2cc0",
-              "leftValue": "={{ $json.texto }}",
-              "rightValue": "",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": false,
               "operator": {
-                "type": "string",
-                "operation": "notEmpty",
+                "type": "boolean",
+                "operation": "false",
                 "singleValue": true
               }
             }
           ],
           "combinator": "and"
         },
-        "options": {}
+        "options": {},
+        "looseTypeValidation": true
       },
       "id": "fa000002-0000-0000-0000-000000000003",
-      "name": "Es mensaje de texto entrante?",
+      "name": "Es mensaje valido?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.1,
       "position": [
@@ -91,7 +92,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $('Extraer Datos Mensaje').first().json.texto }}",
+        "text": "={{ $json.texto }}",
         "options": {
           "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente que ayuda a los usuarios a gestionar sus finanzas personales a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero de WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nIMPORTANTE: Cuando uses cualquier herramienta que requiera el parametro 'numeroWhatsapp', SIEMPRE usa exactamente el valor: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n\nFLUJO DE AUTENTICACION:\nAntes de cualquier operacion financiera, SIEMPRE debes verificar el estado del usuario con la herramienta 'verificarEstadoAuth'.\n\n1. Si 'sesionActiva' es true: procede normalmente con la operacion financiera solicitada.\n2. Si 'sesionActiva' es false y 'cuentaExiste' es false: el usuario no tiene cuenta. Preguntale si quiere registrarse. Necesitas: nombre, email y contrasena. Luego usa 'registrarUsuario'. Despues del registro, se genera un codigo de verificacion que debes indicarle al usuario (el codigo estara en la respuesta del registro). Pidele que te escriba el codigo y verificalo con 'verificarCodigo'.\n3. Si 'sesionActiva' es false y 'cuentaExiste' es true: la sesion expiro. Usa 'solicitarCodigo' para generar un nuevo OTP. Indica al usuario el codigo generado y pidele que lo confirme. Verificalo con 'verificarCodigo'.\n\nSi cualquier herramienta financiera responde con un error que contenga 'sesion activa' o 'sesion', guia al usuario para autenticarse siguiendo el flujo anterior.\n\nCAPACIDADES DISPONIBLES:\n- Consultar balance general (ingresos, gastos, ahorros, dinero disponible)\n- Ver resumen del mes actual con desglose de gastos por categoria\n- Registrar ingresos con su categoria y descripcion\n- Registrar gastos con su categoria y descripcion\n- Registrar ahorros, opcionalmente asociados a una meta\n- Consultar metas financieras activas y su porcentaje de avance\n\nCATEGORIAS DE INGRESOS (usar exactamente una de estas):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente una de estas):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS\n\nINSTRUCCIONES DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, con un tono amigable, claro y conciso\n- Si los datos para registrar un movimiento son claros en el mensaje, procede directamente sin confirmar\n- Si falta un dato esencial (por ejemplo el monto), pregunta por el antes de actuar\n- Usa SOLO texto plano en tus respuestas, sin markdown, asteriscos ni formato especial, porque el mensaje se envia por WhatsApp\n- Los montos se manejan en pesos colombianos (COP)\n- Cuando un usuario nuevo se registra, guialo paso a paso de forma clara y amigable"
         }
@@ -101,7 +102,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        800,
+        1600,
         400
       ]
     },
@@ -121,7 +122,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
       "typeVersion": 1.3,
       "position": [
-        592,
+        1392,
         624
       ],
       "alwaysOutputData": true,
@@ -142,7 +143,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        400,
+        1100,
         640
       ]
     },
@@ -156,7 +157,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        400,
+        1100,
         784
       ]
     },
@@ -171,7 +172,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        400,
+        1100,
         928
       ]
     },
@@ -186,7 +187,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        400,
+        1100,
         1072
       ]
     },
@@ -201,7 +202,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        400,
+        1100,
         1200
       ]
     },
@@ -215,7 +216,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        400,
+        1100,
         1344
       ]
     },
@@ -228,7 +229,7 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "fef352711cf3f894027bc17621b5435bbad6505edea8cc6908eb80d580cacef0"
+              "value": "${EVOLUTION_API_KEY}"
             },
             {
               "name": "Content-Type",
@@ -246,7 +247,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1072,
+        1880,
         400
       ]
     },
@@ -263,7 +264,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1312,
+        2120,
         400
       ]
     },
@@ -277,7 +278,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        704,
+        1504,
         640
       ]
     },
@@ -294,7 +295,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        704,
+        1504,
         784
       ]
     },
@@ -309,7 +310,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        704,
+        1504,
         928
       ]
     },
@@ -326,7 +327,7 @@
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        704,
+        1504,
         1072
       ]
     },
@@ -339,7 +340,7 @@
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "id": "fa000002-0000-0000-0000-000000000019",
       "position": [
-        768,
+        1568,
         624
       ],
       "name": "Memoria Conversacion",
@@ -349,6 +350,139 @@
           "name": "PostgreSQL FinanzApp"
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "audio-check-001",
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "audioMessage",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000020",
+      "name": "Es Audio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [
+        800,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://evolution-api:8080/chat/getBase64FromMediaMessage/finanzapp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "${EVOLUTION_API_KEY}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: { key: { remoteJid: $(\"Extraer Datos Mensaje\").first().json.remoteJid, fromMe: false, id: $(\"Extraer Datos Mensaje\").first().json.messageId } }, convertToMp4: false }) }}",
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000021",
+      "name": "Descargar Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst base64Data = response.base64;\nconst mimeType = response.mimetype || 'audio/ogg; codecs=opus';\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n  },\n  binary: {\n    data: {\n      data: base64Data,\n      mimeType: mimeType,\n      fileName: 'audio.ogg',\n    }\n  }\n}];"
+      },
+      "id": "fa000002-0000-0000-0000-000000000022",
+      "name": "Convertir Audio a Binario",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer ${GROQ_API_KEY}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-large-v3-turbo"
+            },
+            {
+              "name": "language",
+              "value": "es"
+            },
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000023",
+      "name": "Transcribir Audio Groq",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1480,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const transcripcion = $input.first().json;\nconst texto = transcripcion.text || '';\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    tipo: 'audioMessage',\n    texto: texto,\n    esAudio: true,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n    instanceName: datosOriginales.instanceName,\n    skip: false\n  }\n}];"
+      },
+      "id": "fa000002-0000-0000-0000-000000000024",
+      "name": "Preparar Texto Transcrito",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1700,
+        180
+      ]
     }
   ],
   "connections": {
@@ -413,24 +547,6 @@
           {
             "node": "Agente Financiero",
             "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Es mensaje de texto entrante?": {
-      "main": [
-        [
-          {
-            "node": "Agente Financiero",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Ignorar y Responder 200",
-            "type": "main",
             "index": 0
           }
         ]
@@ -517,7 +633,7 @@
       "main": [
         [
           {
-            "node": "Es mensaje de texto entrante?",
+            "node": "Es mensaje valido?",
             "type": "main",
             "index": 0
           }
@@ -545,6 +661,86 @@
           }
         ]
       ]
+    },
+    "Es mensaje valido?": {
+      "main": [
+        [
+          {
+            "node": "Es Audio?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignorar y Responder 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Es Audio?": {
+      "main": [
+        [
+          {
+            "node": "Descargar Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar Audio": {
+      "main": [
+        [
+          {
+            "node": "Convertir Audio a Binario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convertir Audio a Binario": {
+      "main": [
+        [
+          {
+            "node": "Transcribir Audio Groq",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribir Audio Groq": {
+      "main": [
+        [
+          {
+            "node": "Preparar Texto Transcrito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Texto Transcrito": {
+      "main": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -553,9 +749,9 @@
   "staticData": null,
   "meta": null,
   "pinData": {},
-  "versionId": "755d70f0-b20e-46d8-8431-c9b385a13604",
-  "activeVersionId": "755d70f0-b20e-46d8-8431-c9b385a13604",
-  "versionCounter": 60,
+  "versionId": "5c407d52-650d-4257-afb4-87a56694fbc7",
+  "activeVersionId": "5c407d52-650d-4257-afb4-87a56694fbc7",
+  "versionCounter": 75,
   "triggerCount": 1,
   "shared": [
     {
@@ -579,9 +775,9 @@
   "tags": [],
   "parentFolder": null,
   "activeVersion": {
-    "updatedAt": "2026-03-19T00:19:40.000Z",
-    "createdAt": "2026-03-19T00:17:56.393Z",
-    "versionId": "755d70f0-b20e-46d8-8431-c9b385a13604",
+    "updatedAt": "2026-03-19T04:15:29.000Z",
+    "createdAt": "2026-03-19T04:14:02.624Z",
+    "versionId": "5c407d52-650d-4257-afb4-87a56694fbc7",
     "workflowId": "JL7XSvzAgrCHaFol",
     "nodes": [
       {
@@ -603,7 +799,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const payload = $input.first().json.body;\nif (payload?.event !== 'messages.upsert') {\n  return [{ json: { skip: true, motivo: `Evento ignorado: ${payload?.event}` } }];\n}\nconst data = payload?.data;\nconst key = data?.key;\nif (key?.fromMe === true) {\n  return [{ json: { skip: true, motivo: 'Mensaje propio (fromMe)' } }];\n}\nconst remoteJid = key?.remoteJid || '';\nif (remoteJid.endsWith('@g.us')) {\n  return [{ json: { skip: true, motivo: 'Mensaje de grupo' } }];\n}\nconst telefono = remoteJid.split('@')[0];\nconst messageType = data?.messageType;\nconst message = data?.message;\nlet texto = null;\nif (messageType === 'conversation') {\n  texto = message?.conversation ?? null;\n} else if (messageType === 'extendedTextMessage') {\n  texto = message?.extendedTextMessage?.text ?? null;\n}\nreturn [{\n  json: {\n    telefono,\n    remoteJid,\n    tipo: messageType,\n    texto,\n    contacto: data?.pushName || telefono,\n    messageId: key?.id,\n    instanceName: payload?.instance,\n    skip: !texto\n  }\n}];"
+          "jsCode": "const payload = $input.first().json.body;\nif (payload?.event !== 'messages.upsert') {\n  return [{ json: { skip: true, motivo: `Evento ignorado: ${payload?.event}` } }];\n}\nconst data = payload?.data;\nconst key = data?.key;\nif (key?.fromMe === true) {\n  return [{ json: { skip: true, motivo: 'Mensaje propio (fromMe)' } }];\n}\nconst remoteJid = key?.remoteJid || '';\nif (remoteJid.endsWith('@g.us')) {\n  return [{ json: { skip: true, motivo: 'Mensaje de grupo' } }];\n}\nconst telefono = remoteJid.split('@')[0];\nconst messageType = data?.messageType;\nconst message = data?.message;\nlet texto = null;\nlet esAudio = false;\nif (messageType === 'conversation') {\n  texto = message?.conversation ?? null;\n} else if (messageType === 'extendedTextMessage') {\n  texto = message?.extendedTextMessage?.text ?? null;\n} else if (messageType === 'audioMessage') {\n  esAudio = true;\n}\nreturn [{\n  json: {\n    telefono,\n    remoteJid,\n    tipo: messageType,\n    texto,\n    esAudio,\n    contacto: data?.pushName || telefono,\n    messageId: key?.id,\n    instanceName: payload?.instance,\n    skip: !texto && !esAudio\n  }\n}];"
         },
         "id": "fa000002-0000-0000-0000-000000000002",
         "name": "Extraer Datos Mensaje",
@@ -626,21 +822,22 @@
             "conditions": [
               {
                 "id": "8b6d0029-9226-4de9-860f-196e933f2cc0",
-                "leftValue": "={{ $json.texto }}",
-                "rightValue": "",
+                "leftValue": "={{ $json.skip }}",
+                "rightValue": false,
                 "operator": {
-                  "type": "string",
-                  "operation": "notEmpty",
+                  "type": "boolean",
+                  "operation": "false",
                   "singleValue": true
                 }
               }
             ],
             "combinator": "and"
           },
-          "options": {}
+          "options": {},
+          "looseTypeValidation": true
         },
         "id": "fa000002-0000-0000-0000-000000000003",
-        "name": "Es mensaje de texto entrante?",
+        "name": "Es mensaje valido?",
         "type": "n8n-nodes-base.if",
         "typeVersion": 2.1,
         "position": [
@@ -668,7 +865,7 @@
       {
         "parameters": {
           "promptType": "define",
-          "text": "={{ $('Extraer Datos Mensaje').first().json.texto }}",
+          "text": "={{ $json.texto }}",
           "options": {
             "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente que ayuda a los usuarios a gestionar sus finanzas personales a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero de WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nIMPORTANTE: Cuando uses cualquier herramienta que requiera el parametro 'numeroWhatsapp', SIEMPRE usa exactamente el valor: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n\nFLUJO DE AUTENTICACION:\nAntes de cualquier operacion financiera, SIEMPRE debes verificar el estado del usuario con la herramienta 'verificarEstadoAuth'.\n\n1. Si 'sesionActiva' es true: procede normalmente con la operacion financiera solicitada.\n2. Si 'sesionActiva' es false y 'cuentaExiste' es false: el usuario no tiene cuenta. Preguntale si quiere registrarse. Necesitas: nombre, email y contrasena. Luego usa 'registrarUsuario'. Despues del registro, se genera un codigo de verificacion que debes indicarle al usuario (el codigo estara en la respuesta del registro). Pidele que te escriba el codigo y verificalo con 'verificarCodigo'.\n3. Si 'sesionActiva' es false y 'cuentaExiste' es true: la sesion expiro. Usa 'solicitarCodigo' para generar un nuevo OTP. Indica al usuario el codigo generado y pidele que lo confirme. Verificalo con 'verificarCodigo'.\n\nSi cualquier herramienta financiera responde con un error que contenga 'sesion activa' o 'sesion', guia al usuario para autenticarse siguiendo el flujo anterior.\n\nCAPACIDADES DISPONIBLES:\n- Consultar balance general (ingresos, gastos, ahorros, dinero disponible)\n- Ver resumen del mes actual con desglose de gastos por categoria\n- Registrar ingresos con su categoria y descripcion\n- Registrar gastos con su categoria y descripcion\n- Registrar ahorros, opcionalmente asociados a una meta\n- Consultar metas financieras activas y su porcentaje de avance\n\nCATEGORIAS DE INGRESOS (usar exactamente una de estas):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente una de estas):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS\n\nINSTRUCCIONES DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, con un tono amigable, claro y conciso\n- Si los datos para registrar un movimiento son claros en el mensaje, procede directamente sin confirmar\n- Si falta un dato esencial (por ejemplo el monto), pregunta por el antes de actuar\n- Usa SOLO texto plano en tus respuestas, sin markdown, asteriscos ni formato especial, porque el mensaje se envia por WhatsApp\n- Los montos se manejan en pesos colombianos (COP)\n- Cuando un usuario nuevo se registra, guialo paso a paso de forma clara y amigable"
           }
@@ -678,7 +875,7 @@
         "type": "@n8n/n8n-nodes-langchain.agent",
         "typeVersion": 1.7,
         "position": [
-          800,
+          1600,
           400
         ]
       },
@@ -698,7 +895,7 @@
         "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
         "typeVersion": 1.3,
         "position": [
-          592,
+          1392,
           624
         ],
         "alwaysOutputData": true,
@@ -719,7 +916,7 @@
         "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
         "typeVersion": 1.1,
         "position": [
-          400,
+          1100,
           640
         ]
       },
@@ -733,7 +930,7 @@
         "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
         "typeVersion": 1.1,
         "position": [
-          400,
+          1100,
           784
         ]
       },
@@ -748,7 +945,7 @@
         "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
         "typeVersion": 1.1,
         "position": [
-          400,
+          1100,
           928
         ]
       },
@@ -763,7 +960,7 @@
         "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
         "typeVersion": 1.1,
         "position": [
-          400,
+          1100,
           1072
         ]
       },
@@ -778,7 +975,7 @@
         "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
         "typeVersion": 1.1,
         "position": [
-          400,
+          1100,
           1200
         ]
       },
@@ -792,7 +989,7 @@
         "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
         "typeVersion": 1.1,
         "position": [
-          400,
+          1100,
           1344
         ]
       },
@@ -805,7 +1002,7 @@
             "parameters": [
               {
                 "name": "apikey",
-                "value": "fef352711cf3f894027bc17621b5435bbad6505edea8cc6908eb80d580cacef0"
+                "value": "${EVOLUTION_API_KEY}"
               },
               {
                 "name": "Content-Type",
@@ -823,7 +1020,7 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          1072,
+          1880,
           400
         ]
       },
@@ -840,7 +1037,7 @@
         "type": "n8n-nodes-base.respondToWebhook",
         "typeVersion": 1.1,
         "position": [
-          1312,
+          2120,
           400
         ]
       },
@@ -854,7 +1051,7 @@
         "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
         "typeVersion": 1.1,
         "position": [
-          704,
+          1504,
           640
         ]
       },
@@ -871,7 +1068,7 @@
         "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
         "typeVersion": 1.1,
         "position": [
-          704,
+          1504,
           784
         ]
       },
@@ -886,7 +1083,7 @@
         "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
         "typeVersion": 1.1,
         "position": [
-          704,
+          1504,
           928
         ]
       },
@@ -903,7 +1100,7 @@
         "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
         "typeVersion": 1.1,
         "position": [
-          704,
+          1504,
           1072
         ]
       },
@@ -916,7 +1113,7 @@
         "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
         "id": "fa000002-0000-0000-0000-000000000019",
         "position": [
-          768,
+          1568,
           624
         ],
         "name": "Memoria Conversacion",
@@ -926,6 +1123,139 @@
             "name": "PostgreSQL FinanzApp"
           }
         }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "audio-check-001",
+                "leftValue": "={{ $json.tipo }}",
+                "rightValue": "audioMessage",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000020",
+        "name": "Es Audio?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.1,
+        "position": [
+          800,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://evolution-api:8080/chat/getBase64FromMediaMessage/finanzapp",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "${EVOLUTION_API_KEY}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ message: { key: { remoteJid: $(\"Extraer Datos Mensaje\").first().json.remoteJid, fromMe: false, id: $(\"Extraer Datos Mensaje\").first().json.messageId } }, convertToMp4: false }) }}",
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000021",
+        "name": "Descargar Audio",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1040,
+          180
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const response = $input.first().json;\nconst base64Data = response.base64;\nconst mimeType = response.mimetype || 'audio/ogg; codecs=opus';\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n  },\n  binary: {\n    data: {\n      data: base64Data,\n      mimeType: mimeType,\n      fileName: 'audio.ogg',\n    }\n  }\n}];"
+        },
+        "id": "fa000002-0000-0000-0000-000000000022",
+        "name": "Convertir Audio a Binario",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1260,
+          180
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer ${GROQ_API_KEY}"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "multipart-form-data",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "model",
+                "value": "whisper-large-v3-turbo"
+              },
+              {
+                "name": "language",
+                "value": "es"
+              },
+              {
+                "name": "file",
+                "parameterType": "formBinaryData",
+                "inputDataFieldName": "data"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000023",
+        "name": "Transcribir Audio Groq",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1480,
+          180
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const transcripcion = $input.first().json;\nconst texto = transcripcion.text || '';\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    tipo: 'audioMessage',\n    texto: texto,\n    esAudio: true,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n    instanceName: datosOriginales.instanceName,\n    skip: false\n  }\n}];"
+        },
+        "id": "fa000002-0000-0000-0000-000000000024",
+        "name": "Preparar Texto Transcrito",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1700,
+          180
+        ]
       }
     ],
     "connections": {
@@ -990,24 +1320,6 @@
             {
               "node": "Agente Financiero",
               "type": "ai_tool",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Es mensaje de texto entrante?": {
-        "main": [
-          [
-            {
-              "node": "Agente Financiero",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Ignorar y Responder 200",
-              "type": "main",
               "index": 0
             }
           ]
@@ -1094,7 +1406,7 @@
         "main": [
           [
             {
-              "node": "Es mensaje de texto entrante?",
+              "node": "Es mensaje valido?",
               "type": "main",
               "index": 0
             }
@@ -1122,18 +1434,98 @@
             }
           ]
         ]
+      },
+      "Es mensaje valido?": {
+        "main": [
+          [
+            {
+              "node": "Es Audio?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Ignorar y Responder 200",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Es Audio?": {
+        "main": [
+          [
+            {
+              "node": "Descargar Audio",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Descargar Audio": {
+        "main": [
+          [
+            {
+              "node": "Convertir Audio a Binario",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Convertir Audio a Binario": {
+        "main": [
+          [
+            {
+              "node": "Transcribir Audio Groq",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Transcribir Audio Groq": {
+        "main": [
+          [
+            {
+              "node": "Preparar Texto Transcrito",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar Texto Transcrito": {
+        "main": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "authors": "Brayan Villamizar",
-    "name": "Version 755d70f0",
-    "description": "Switch Registrar Usuario and Verificar Codigo tools from JSON body to URL query params (fixes $fromAI not passing parameters)",
+    "name": "Version 5c407d52",
+    "description": "",
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-03-19T00:19:40.273Z",
-        "id": 15,
+        "createdAt": "2026-03-19T04:15:29.484Z",
+        "id": 23,
         "workflowId": "JL7XSvzAgrCHaFol",
-        "versionId": "755d70f0-b20e-46d8-8431-c9b385a13604",
+        "versionId": "5c407d52-650d-4257-afb4-87a56694fbc7",
         "event": "activated",
         "userId": "3ee82c64-db70-4aa9-82ca-10a0f5c6b958"
       }
@@ -1154,5 +1546,5 @@
     "workflow:update",
     "workflow:updateRedactionSetting"
   ],
-  "checksum": "7157e6693eb5935f031f5cf2849626432b244565afa55c1d905d74d71a9468b4"
+  "checksum": "75f03264c3c53eeeaab397d535378ef65e0354963139d7c20861dc1d74683a06"
 }
