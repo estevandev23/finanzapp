@@ -469,7 +469,7 @@
       "parameters": {
         "toolDescription": "Registra una deuda (dinero que debo) o prestamo (dinero que me deben). Requiere tipo (DEUDA o PRESTAMO), descripcion y montoTotal. Opcionalmente entidad, categoria y fechaLimite.",
         "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo=={{ $fromAI('tipo', 'Tipo: DEUDA o PRESTAMO', 'string') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion de la deuda o prestamo', 'string') }}&montoTotal=={{ $fromAI('montoTotal', 'Monto total de la deuda', 'number') }}&entidad=={{ $fromAI('entidad', 'Persona o entidad. Vacio si no aplica', 'string') }}&fechaLimite=={{ $fromAI('fechaLimite', 'Fecha limite YYYY-MM-DD o vacio', 'string') }}"
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo={{ $fromAI('tipo', 'Tipo: DEUDA o PRESTAMO', 'string') }}&descripcion={{ $fromAI('descripcion', 'Descripcion de la deuda o prestamo', 'string') }}&montoTotal={{ $fromAI('montoTotal', 'Monto total de la deuda', 'number') }}&entidad={{ $fromAI('entidad', 'Persona o entidad. Vacio si no aplica', 'string') }}&fechaLimite={{ $fromAI('fechaLimite', 'Fecha limite YYYY-MM-DD o vacio', 'string') }}"
       },
       "id": "fa000002-0000-0000-0000-000000000026",
       "name": "Tool: Crear Deuda",
@@ -483,7 +483,7 @@
     {
       "parameters": {
         "toolDescription": "Consulta las deudas y prestamos del usuario. Puede filtrar por tipo: DEUDA o PRESTAMO. Muestra monto total, abonado, restante y porcentaje de avance.",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deudas?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo=={{ $fromAI('tipo', 'Filtrar: DEUDA, PRESTAMO o vacio para todos', 'string') }}"
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deudas?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo={{ $fromAI('tipo', 'Filtrar: DEUDA, PRESTAMO o vacio para todos', 'string') }}"
       },
       "id": "fa000002-0000-0000-0000-000000000027",
       "name": "Tool: Consultar Deudas",
@@ -498,7 +498,7 @@
       "parameters": {
         "toolDescription": "Registra un abono o pago a una deuda o prestamo. Requiere el ID de la deuda y el monto. Primero consulta las deudas para obtener el ID.",
         "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda/={{ $fromAI('deudaId', 'ID UUID de la deuda', 'string') }}/abono?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto=={{ $fromAI('monto', 'Monto del abono', 'number') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion del abono o vacio', 'string') }}&metodoPago=={{ $fromAI('metodoPago', 'Metodo: EFECTIVO, NEQUI, BANCOLOMBIA, OTRO', 'string') }}"
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda/={{ $fromAI('deudaId', 'ID UUID de la deuda', 'string') }}/abono?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto={{ $fromAI('monto', 'Monto del abono', 'number') }}&descripcion={{ $fromAI('descripcion', 'Descripcion del abono o vacio', 'string') }}&metodoPago={{ $fromAI('metodoPago', 'Metodo: EFECTIVO, NEQUI, BANCOLOMBIA, OTRO', 'string') }}"
       },
       "id": "fa000002-0000-0000-0000-000000000028",
       "name": "Tool: Abonar Deuda",
@@ -541,7 +541,7 @@
       "parameters": {
         "toolDescription": "Registra una nueva inversion con nombre, monto y retorno esperado opcional. Al crearla se descuenta del balance como gasto.",
         "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&nombre=={{ $fromAI('nombre', 'Nombre de la inversion', 'string') }}&monto=={{ $fromAI('monto', 'Monto a invertir', 'number') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion o vacio', 'string') }}&retornoEsperado=={{ $fromAI('retornoEsperado', 'Retorno esperado o vacio', 'number') }}"
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&nombre={{ $fromAI('nombre', 'Nombre de la inversion', 'string') }}&monto={{ $fromAI('monto', 'Monto a invertir', 'number') }}&descripcion={{ $fromAI('descripcion', 'Descripcion o vacio', 'string') }}&retornoEsperado={{ $fromAI('retornoEsperado', 'Retorno esperado o vacio', 'number') }}"
       },
       "id": "fa000002-0000-0000-0000-000000000031",
       "name": "Tool: Crear Inversion",
@@ -555,7 +555,7 @@
     {
       "parameters": {
         "toolDescription": "Consulta inversiones del usuario. Filtrar por estado: ACTIVA o FINALIZADA. Muestra monto invertido, retorno esperado y fecha.",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversiones?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&estado=={{ $fromAI('estado', 'Filtrar: ACTIVA, FINALIZADA o vacio para todas', 'string') }}"
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversiones?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&estado={{ $fromAI('estado', 'Filtrar: ACTIVA, FINALIZADA o vacio para todas', 'string') }}"
       },
       "id": "fa000002-0000-0000-0000-000000000032",
       "name": "Tool: Consultar Inversiones",
@@ -570,7 +570,7 @@
       "parameters": {
         "toolDescription": "Registra retorno real de una inversion y la marca finalizada. Requiere ID de inversion y monto obtenido. Muestra ganancia o perdida.",
         "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion/={{ $fromAI('inversionId', 'ID UUID de la inversion', 'string') }}/retorno?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&retornoReal=={{ $fromAI('retornoReal', 'Monto real obtenido', 'number') }}"
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion/={{ $fromAI('inversionId', 'ID UUID de la inversion', 'string') }}/retorno?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&retornoReal={{ $fromAI('retornoReal', 'Monto real obtenido', 'number') }}"
       },
       "id": "fa000002-0000-0000-0000-000000000033",
       "name": "Tool: Registrar Retorno Inversion",
@@ -1616,7 +1616,7 @@
         "parameters": {
           "toolDescription": "Registra una deuda (dinero que debo) o prestamo (dinero que me deben). Requiere tipo (DEUDA o PRESTAMO), descripcion y montoTotal. Opcionalmente entidad, categoria y fechaLimite.",
           "method": "POST",
-          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo=={{ $fromAI('tipo', 'Tipo: DEUDA o PRESTAMO', 'string') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion de la deuda o prestamo', 'string') }}&montoTotal=={{ $fromAI('montoTotal', 'Monto total de la deuda', 'number') }}&entidad=={{ $fromAI('entidad', 'Persona o entidad. Vacio si no aplica', 'string') }}&fechaLimite=={{ $fromAI('fechaLimite', 'Fecha limite YYYY-MM-DD o vacio', 'string') }}"
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo={{ $fromAI('tipo', 'Tipo: DEUDA o PRESTAMO', 'string') }}&descripcion={{ $fromAI('descripcion', 'Descripcion de la deuda o prestamo', 'string') }}&montoTotal={{ $fromAI('montoTotal', 'Monto total de la deuda', 'number') }}&entidad={{ $fromAI('entidad', 'Persona o entidad. Vacio si no aplica', 'string') }}&fechaLimite={{ $fromAI('fechaLimite', 'Fecha limite YYYY-MM-DD o vacio', 'string') }}"
         },
         "id": "fa000002-0000-0000-0000-000000000026",
         "name": "Tool: Crear Deuda",
@@ -1630,7 +1630,7 @@
       {
         "parameters": {
           "toolDescription": "Consulta las deudas y prestamos del usuario. Puede filtrar por tipo: DEUDA o PRESTAMO. Muestra monto total, abonado, restante y porcentaje de avance.",
-          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deudas?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo=={{ $fromAI('tipo', 'Filtrar: DEUDA, PRESTAMO o vacio para todos', 'string') }}"
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deudas?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo={{ $fromAI('tipo', 'Filtrar: DEUDA, PRESTAMO o vacio para todos', 'string') }}"
         },
         "id": "fa000002-0000-0000-0000-000000000027",
         "name": "Tool: Consultar Deudas",
@@ -1645,7 +1645,7 @@
         "parameters": {
           "toolDescription": "Registra un abono o pago a una deuda o prestamo. Requiere el ID de la deuda y el monto. Primero consulta las deudas para obtener el ID.",
           "method": "POST",
-          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda/={{ $fromAI('deudaId', 'ID UUID de la deuda', 'string') }}/abono?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto=={{ $fromAI('monto', 'Monto del abono', 'number') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion del abono o vacio', 'string') }}&metodoPago=={{ $fromAI('metodoPago', 'Metodo: EFECTIVO, NEQUI, BANCOLOMBIA, OTRO', 'string') }}"
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda/={{ $fromAI('deudaId', 'ID UUID de la deuda', 'string') }}/abono?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto={{ $fromAI('monto', 'Monto del abono', 'number') }}&descripcion={{ $fromAI('descripcion', 'Descripcion del abono o vacio', 'string') }}&metodoPago={{ $fromAI('metodoPago', 'Metodo: EFECTIVO, NEQUI, BANCOLOMBIA, OTRO', 'string') }}"
         },
         "id": "fa000002-0000-0000-0000-000000000028",
         "name": "Tool: Abonar Deuda",
@@ -1688,7 +1688,7 @@
         "parameters": {
           "toolDescription": "Registra una nueva inversion con nombre, monto y retorno esperado opcional. Al crearla se descuenta del balance como gasto.",
           "method": "POST",
-          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&nombre=={{ $fromAI('nombre', 'Nombre de la inversion', 'string') }}&monto=={{ $fromAI('monto', 'Monto a invertir', 'number') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion o vacio', 'string') }}&retornoEsperado=={{ $fromAI('retornoEsperado', 'Retorno esperado o vacio', 'number') }}"
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&nombre={{ $fromAI('nombre', 'Nombre de la inversion', 'string') }}&monto={{ $fromAI('monto', 'Monto a invertir', 'number') }}&descripcion={{ $fromAI('descripcion', 'Descripcion o vacio', 'string') }}&retornoEsperado={{ $fromAI('retornoEsperado', 'Retorno esperado o vacio', 'number') }}"
         },
         "id": "fa000002-0000-0000-0000-000000000031",
         "name": "Tool: Crear Inversion",
@@ -1702,7 +1702,7 @@
       {
         "parameters": {
           "toolDescription": "Consulta inversiones del usuario. Filtrar por estado: ACTIVA o FINALIZADA. Muestra monto invertido, retorno esperado y fecha.",
-          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversiones?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&estado=={{ $fromAI('estado', 'Filtrar: ACTIVA, FINALIZADA o vacio para todas', 'string') }}"
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversiones?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&estado={{ $fromAI('estado', 'Filtrar: ACTIVA, FINALIZADA o vacio para todas', 'string') }}"
         },
         "id": "fa000002-0000-0000-0000-000000000032",
         "name": "Tool: Consultar Inversiones",
@@ -1717,7 +1717,7 @@
         "parameters": {
           "toolDescription": "Registra retorno real de una inversion y la marca finalizada. Requiere ID de inversion y monto obtenido. Muestra ganancia o perdida.",
           "method": "POST",
-          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion/={{ $fromAI('inversionId', 'ID UUID de la inversion', 'string') }}/retorno?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&retornoReal=={{ $fromAI('retornoReal', 'Monto real obtenido', 'number') }}"
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion/={{ $fromAI('inversionId', 'ID UUID de la inversion', 'string') }}/retorno?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&retornoReal={{ $fromAI('retornoReal', 'Monto real obtenido', 'number') }}"
         },
         "id": "fa000002-0000-0000-0000-000000000033",
         "name": "Tool: Registrar Retorno Inversion",
