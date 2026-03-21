@@ -146,48 +146,54 @@
     },
     {
       "parameters": {
-        "toolDescription": "Registra un ingreso de dinero. Requiere monto y categoria. Categorias validas: TRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS.",
-        "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/ingreso?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto={{ $fromAI('monto', 'Monto del ingreso en pesos colombianos', 'number') }}&categoria={{ $fromAI('categoria', 'Categoria: TRABAJO_PRINCIPAL TRABAJO_EXTRA GANANCIAS_ADICIONALES INVERSIONES OTROS', 'string') }}&descripcion={{ $fromAI('descripcion', 'Descripcion breve del ingreso', 'string') }}"
+        "name": "registrar_ingreso",
+        "description": "Registra un ingreso de dinero. Requiere monto y categoria. Categorias validas: TRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/ingreso';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nqueryParams.append('monto', String(monto));\nqueryParams.append('categoria', String(categoria));\nif (descripcion !== undefined && descripcion !== null && descripcion !== '') {\n  queryParams.append('descripcion', String(descripcion));\n};\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"monto\":{\"type\":\"number\",\"description\":\"Monto del ingreso en pesos colombianos\"},\"categoria\":{\"type\":\"string\",\"description\":\"Categoria: TRABAJO_PRINCIPAL TRABAJO_EXTRA GANANCIAS_ADICIONALES INVERSIONES OTROS\"},\"descripcion\":{\"type\":\"string\",\"description\":\"Descripcion breve del ingreso\"}},\"required\":[\"monto\",\"categoria\"]}"
       },
-      "id": "fa000002-0000-0000-0000-000000000009",
-      "name": "Tool: Registrar Ingreso",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1100,
         928
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000009",
+      "name": "Tool: Registrar Ingreso"
     },
     {
       "parameters": {
-        "toolDescription": "Registra un gasto de dinero. Requiere monto y categoria. Categorias validas: COMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS.",
-        "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/gasto?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto={{ $fromAI('monto', 'Monto del gasto en pesos colombianos', 'number') }}&categoria={{ $fromAI('categoria', 'Categoria: COMIDA PAREJA COMPRAS TRANSPORTE SERVICIOS ENTRETENIMIENTO SALUD EDUCACION OTROS', 'string') }}&descripcion={{ $fromAI('descripcion', 'Descripcion breve del gasto', 'string') }}"
+        "name": "registrar_gasto",
+        "description": "Registra un gasto de dinero. Requiere monto y categoria. Categorias validas: COMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/gasto';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nqueryParams.append('monto', String(monto));\nqueryParams.append('categoria', String(categoria));\nif (descripcion !== undefined && descripcion !== null && descripcion !== '') {\n  queryParams.append('descripcion', String(descripcion));\n};\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"monto\":{\"type\":\"number\",\"description\":\"Monto del gasto en pesos colombianos\"},\"categoria\":{\"type\":\"string\",\"description\":\"Categoria: COMIDA PAREJA COMPRAS TRANSPORTE SERVICIOS ENTRETENIMIENTO SALUD EDUCACION OTROS\"},\"descripcion\":{\"type\":\"string\",\"description\":\"Descripcion breve del gasto\"}},\"required\":[\"monto\",\"categoria\"]}"
       },
-      "id": "fa000002-0000-0000-0000-000000000010",
-      "name": "Tool: Registrar Gasto",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1100,
         1072
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000010",
+      "name": "Tool: Registrar Gasto"
     },
     {
       "parameters": {
-        "toolDescription": "Registra un ahorro. Requiere monto. Opcionalmente puede asociarse a una meta financiera con metaId.",
-        "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/ahorro?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto={{ $fromAI('monto', 'Monto a ahorrar en pesos colombianos', 'number') }}&descripcion={{ $fromAI('descripcion', 'Descripcion del ahorro', 'string') }}&metaId={{ $fromAI('metaId', 'ID de la meta financiera asociada o vacio si no aplica', 'string') }}"
+        "name": "registrar_ahorro",
+        "description": "Registra un ahorro. Requiere monto. Opcionalmente puede asociarse a una meta financiera con metaId.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/ahorro';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nqueryParams.append('monto', String(monto));\nif (descripcion !== undefined && descripcion !== null && descripcion !== '') {\n  queryParams.append('descripcion', String(descripcion));\n};\nif (metaId !== undefined && metaId !== null && metaId !== '') {\n  queryParams.append('metaId', String(metaId));\n}\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"monto\":{\"type\":\"number\",\"description\":\"Monto a ahorrar en pesos colombianos\"},\"descripcion\":{\"type\":\"string\",\"description\":\"Descripcion del ahorro\"},\"metaId\":{\"type\":\"string\",\"description\":\"ID de la meta financiera asociada o vacio si no aplica\"}},\"required\":[\"monto\"]}"
       },
-      "id": "fa000002-0000-0000-0000-000000000011",
-      "name": "Tool: Registrar Ahorro",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1100,
         1200
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000011",
+      "name": "Tool: Registrar Ahorro"
     },
     {
       "parameters": {
@@ -250,20 +256,20 @@
     },
     {
       "parameters": {
-        "sendBody": false,
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/auth/registro?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&nombre={{ $fromAI('nombre', 'Nombre completo del usuario', 'string') }}&email={{ $fromAI('email', 'Correo electronico del usuario', 'string') }}&password={{ $fromAI('password', 'Contrasena elegida por el usuario', 'string') }}",
-        "toolDescription": "Registra un nuevo usuario desde WhatsApp. Usar cuando verificarEstadoAuth indica cuentaExiste=false. Requiere nombre completo, email y contrasena. Devuelve un codigo de verificacion OTP.",
-        "sendQuery": false,
-        "method": "POST"
+        "name": "registrar_usuario",
+        "description": "Registra un nuevo usuario desde WhatsApp. Usar cuando verificarEstadoAuth indica cuentaExiste=false. Requiere nombre completo, email y contrasena. Devuelve un codigo de verificacion OTP.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/auth/registro';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nqueryParams.append('nombre', String(nombre));\nqueryParams.append('email', String(email));\nqueryParams.append('password', String(password));\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"nombre\": {\"type\": \"string\", \"description\": \"Nombre completo del usuario\"}, \"email\": {\"type\": \"string\", \"description\": \"Correo electronico del usuario\"}, \"password\": {\"type\": \"string\", \"description\": \"Contrasena elegida por el usuario\"}}, \"required\": [\"nombre\", \"email\", \"password\"]}"
       },
-      "id": "fa000002-0000-0000-0000-000000000016",
-      "name": "Tool: Registrar Usuario",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1504,
         784
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000016",
+      "name": "Tool: Registrar Usuario"
     },
     {
       "parameters": {
@@ -282,20 +288,20 @@
     },
     {
       "parameters": {
-        "sendBody": false,
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/auth/verificar-codigo?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&codigo={{ $fromAI('codigo', 'Codigo OTP de 6 digitos proporcionado por el usuario', 'string') }}",
-        "toolDescription": "Verifica el codigo OTP proporcionado por el usuario para activar su sesion de WhatsApp. Usar despues de registrarUsuario o solicitarCodigo.",
-        "sendQuery": false,
-        "method": "POST"
+        "name": "verificar_codigo",
+        "description": "Verifica el codigo OTP proporcionado por el usuario para activar su sesion de WhatsApp. Usar despues de registrarUsuario o solicitarCodigo.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/auth/verificar-codigo';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nqueryParams.append('codigo', String(codigo));\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"codigo\": {\"type\": \"string\", \"description\": \"Codigo OTP de 6 digitos proporcionado por el usuario\"}}, \"required\": [\"codigo\"]}"
       },
-      "id": "fa000002-0000-0000-0000-000000000018",
-      "name": "Tool: Verificar Codigo",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1504,
         1072
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000018",
+      "name": "Tool: Verificar Codigo"
     },
     {
       "parameters": {
@@ -467,47 +473,54 @@
     },
     {
       "parameters": {
-        "toolDescription": "Registra una deuda (dinero que debo) o prestamo (dinero que me deben). Requiere tipo (DEUDA o PRESTAMO), descripcion y montoTotal. Opcionalmente entidad, categoria y fechaLimite.",
-        "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo={{ $fromAI('tipo', 'Tipo: DEUDA o PRESTAMO', 'string') }}&descripcion={{ $fromAI('descripcion', 'Descripcion de la deuda o prestamo', 'string') }}&montoTotal={{ $fromAI('montoTotal', 'Monto total de la deuda', 'number') }}&entidad={{ $fromAI('entidad', 'Persona o entidad. Vacio si no aplica', 'string') }}&fechaLimite={{ $fromAI('fechaLimite', 'Fecha limite YYYY-MM-DD o vacio', 'string') }}"
+        "name": "crear_deuda",
+        "description": "Registra una deuda (dinero que debo) o prestamo (dinero que me deben). Requiere tipo (DEUDA o PRESTAMO), descripcion y montoTotal. Opcionalmente entidad, categoria y fechaLimite.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/deuda';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nqueryParams.append('tipo', String(tipo));\nif (descripcion !== undefined && descripcion !== null && descripcion !== '') {\n  queryParams.append('descripcion', String(descripcion));\n};\nqueryParams.append('montoTotal', String(montoTotal));\nif (entidad !== undefined && entidad !== null && entidad !== '') {\n  queryParams.append('entidad', String(entidad));\n}\nif (fechaLimite !== undefined && fechaLimite !== null && fechaLimite !== '') {\n  queryParams.append('fechaLimite', String(fechaLimite));\n}\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"tipo\":{\"type\":\"string\",\"description\":\"Tipo: DEUDA o PRESTAMO\"},\"descripcion\":{\"type\":\"string\",\"description\":\"Descripcion de la deuda o prestamo\"},\"montoTotal\":{\"type\":\"number\",\"description\":\"Monto total de la deuda\"},\"entidad\":{\"type\":\"string\",\"description\":\"Persona o entidad. Vacio si no aplica\"},\"fechaLimite\":{\"type\":\"string\",\"description\":\"Fecha limite YYYY-MM-DD o vacio\"}},\"required\":[\"tipo\",\"montoTotal\"]}"
       },
-      "id": "fa000002-0000-0000-0000-000000000026",
-      "name": "Tool: Crear Deuda",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1100,
         1488
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000026",
+      "name": "Tool: Crear Deuda"
     },
     {
       "parameters": {
-        "toolDescription": "Consulta las deudas y prestamos del usuario. Puede filtrar por tipo: DEUDA o PRESTAMO. Muestra monto total, abonado, restante y porcentaje de avance.",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deudas?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo={{ $fromAI('tipo', 'Filtrar: DEUDA, PRESTAMO o vacio para todos', 'string') }}"
+        "name": "consultar_deudas",
+        "description": "Consulta las deudas y prestamos del usuario. Puede filtrar por tipo: DEUDA o PRESTAMO. Muestra monto total, abonado, restante y porcentaje de avance.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/deudas';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nif (tipo !== undefined && tipo !== null && tipo !== '') {\n  queryParams.append('tipo', String(tipo));\n}\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'GET',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"tipo\": {\"type\": \"string\", \"description\": \"Filtrar: DEUDA, PRESTAMO o vacio para todos\"}}}"
       },
-      "id": "fa000002-0000-0000-0000-000000000027",
-      "name": "Tool: Consultar Deudas",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1100,
         1632
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000027",
+      "name": "Tool: Consultar Deudas"
     },
     {
       "parameters": {
-        "toolDescription": "Registra un abono o pago a una deuda o prestamo. Requiere el ID de la deuda y el monto. Primero consulta las deudas para obtener el ID.",
-        "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda/={{ $fromAI('deudaId', 'ID UUID de la deuda', 'string') }}/abono?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto={{ $fromAI('monto', 'Monto del abono', 'number') }}&descripcion={{ $fromAI('descripcion', 'Descripcion del abono o vacio', 'string') }}&metodoPago={{ $fromAI('metodoPago', 'Metodo: EFECTIVO, NEQUI, BANCOLOMBIA, OTRO', 'string') }}"
+        "name": "abonar_deuda",
+        "description": "Registra un abono o pago a una deuda o prestamo. Requiere el ID de la deuda y el monto. Primero consulta las deudas para obtener el ID.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/deuda/abono';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nqueryParams.append('deudaId', String(deudaId));\nqueryParams.append('monto', String(monto));\nif (descripcion !== undefined && descripcion !== null && descripcion !== '') {\n  queryParams.append('descripcion', String(descripcion));\n};\nif (metodoPago !== undefined && metodoPago !== null && metodoPago !== '') {\n  queryParams.append('metodoPago', String(metodoPago));\n};\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"deudaId\":{\"type\":\"string\",\"description\":\"ID UUID de la deuda\"},\"monto\":{\"type\":\"number\",\"description\":\"Monto del abono\"},\"descripcion\":{\"type\":\"string\",\"description\":\"Descripcion del abono\"},\"metodoPago\":{\"type\":\"string\",\"description\":\"Metodo: EFECTIVO NEQUI BANCOLOMBIA OTRO\"}},\"required\":[\"deudaId\",\"monto\"]}"
       },
-      "id": "fa000002-0000-0000-0000-000000000028",
-      "name": "Tool: Abonar Deuda",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1100,
         1776
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000028",
+      "name": "Tool: Abonar Deuda"
     },
     {
       "parameters": {
@@ -525,61 +538,71 @@
     },
     {
       "parameters": {
-        "toolDescription": "Consulta historial de abonos de una deuda o prestamo especifico. Requiere el ID de la deuda.",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda/={{ $fromAI('deudaId', 'ID UUID de la deuda', 'string') }}/abonos?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+        "name": "historial_abonos",
+        "description": "Consulta historial de abonos de una deuda o prestamo especifico. Requiere el ID de la deuda.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/deuda/abonos';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nqueryParams.append('deudaId', String(deudaId));\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'GET',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"deudaId\": {\"type\": \"string\", \"description\": \"ID UUID de la deuda\"}}, \"required\": [\"deudaId\"]}"
       },
-      "id": "fa000002-0000-0000-0000-000000000030",
-      "name": "Tool: Historial Abonos",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1100,
         2064
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000030",
+      "name": "Tool: Historial Abonos"
     },
     {
       "parameters": {
-        "toolDescription": "Registra una nueva inversion con nombre, monto y retorno esperado opcional. Al crearla se descuenta del balance como gasto.",
-        "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&nombre={{ $fromAI('nombre', 'Nombre de la inversion', 'string') }}&monto={{ $fromAI('monto', 'Monto a invertir', 'number') }}&descripcion={{ $fromAI('descripcion', 'Descripcion o vacio', 'string') }}&retornoEsperado={{ $fromAI('retornoEsperado', 'Retorno esperado o vacio', 'number') }}"
+        "name": "crear_inversion",
+        "description": "Registra una nueva inversion con nombre, monto y retorno esperado opcional. Al crearla se descuenta del balance como gasto.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/inversion';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nqueryParams.append('nombre', String(nombre));\nqueryParams.append('monto', String(monto));\nif (descripcion !== undefined && descripcion !== null && descripcion !== '') {\n  queryParams.append('descripcion', String(descripcion));\n}\nif (retornoEsperado !== undefined && retornoEsperado !== null && retornoEsperado !== '') {\n  queryParams.append('retornoEsperado', String(retornoEsperado));\n}\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"nombre\": {\"type\": \"string\", \"description\": \"Nombre de la inversion\"}, \"monto\": {\"type\": \"number\", \"description\": \"Monto a invertir\"}, \"descripcion\": {\"type\": \"string\", \"description\": \"Descripcion o vacio\"}, \"retornoEsperado\": {\"type\": \"number\", \"description\": \"Retorno esperado o vacio\"}}, \"required\": [\"nombre\", \"monto\"]}"
       },
-      "id": "fa000002-0000-0000-0000-000000000031",
-      "name": "Tool: Crear Inversion",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1504,
         1344
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000031",
+      "name": "Tool: Crear Inversion"
     },
     {
       "parameters": {
-        "toolDescription": "Consulta inversiones del usuario. Filtrar por estado: ACTIVA o FINALIZADA. Muestra monto invertido, retorno esperado y fecha.",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversiones?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&estado={{ $fromAI('estado', 'Filtrar: ACTIVA, FINALIZADA o vacio para todas', 'string') }}"
+        "name": "consultar_inversiones",
+        "description": "Consulta inversiones del usuario. Filtrar por estado: ACTIVA o FINALIZADA. Muestra monto invertido, retorno esperado y fecha.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/inversiones';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nif (estado !== undefined && estado !== null && estado !== '') {\n  queryParams.append('estado', String(estado));\n}\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'GET',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"estado\": {\"type\": \"string\", \"description\": \"Filtrar: ACTIVA, FINALIZADA o vacio para todas\"}}}"
       },
-      "id": "fa000002-0000-0000-0000-000000000032",
-      "name": "Tool: Consultar Inversiones",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1504,
         1488
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000032",
+      "name": "Tool: Consultar Inversiones"
     },
     {
       "parameters": {
-        "toolDescription": "Registra retorno real de una inversion y la marca finalizada. Requiere ID de inversion y monto obtenido. Muestra ganancia o perdida.",
-        "method": "POST",
-        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion/={{ $fromAI('inversionId', 'ID UUID de la inversion', 'string') }}/retorno?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&retornoReal={{ $fromAI('retornoReal', 'Monto real obtenido', 'number') }}"
+        "name": "registrar_retorno_inversion",
+        "description": "Registra retorno real de una inversion y la marca finalizada. Requiere ID de inversion y monto obtenido. Muestra ganancia o perdida.",
+        "language": "javaScript",
+        "jsCode": "const baseUrl = 'http://finanzapp-api:8080';\nconst telefono = $('Extraer Datos Mensaje').first().json.telefono;\nconst path = '/api/v1/whatsapp/inversion/retorno';\n\nconst queryParams = new URLSearchParams();\nqueryParams.append('numeroWhatsapp', telefono);\n\nqueryParams.append('inversionId', String(inversionId));\nqueryParams.append('retornoReal', String(retornoReal));\n\nconst url = `${baseUrl}${path}?${queryParams.toString()}`;\n\nconst response = await fetch(url, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' }\n});\n\nconst data = await response.json();\nreturn JSON.stringify(data);",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"inversionId\": {\"type\": \"string\", \"description\": \"ID UUID de la inversion\"}, \"retornoReal\": {\"type\": \"number\", \"description\": \"Monto real obtenido como retorno\"}}, \"required\": [\"inversionId\", \"retornoReal\"]}"
       },
-      "id": "fa000002-0000-0000-0000-000000000033",
-      "name": "Tool: Registrar Retorno Inversion",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
       "position": [
         1504,
         1632
-      ]
+      ],
+      "id": "fa000002-0000-0000-0000-000000000033",
+      "name": "Tool: Registrar Retorno Inversion"
     },
     {
       "parameters": {
