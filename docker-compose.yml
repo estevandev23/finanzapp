@@ -181,7 +181,7 @@ services:
       MCP_HTTP_PORT: ${MCP_HTTP_PORT:-3001}
     ports:
       - "${MCP_HTTP_PORT:-3001}:3001"
-    command: ["node", "dist/http-server.js"]
+    command: ["node", "dist/sse-server.js"]
     networks:
       - finanzapp-network
 
