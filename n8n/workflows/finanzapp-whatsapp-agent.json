@@ -11,7 +11,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "whatsapp",
-        "responseMode": "responseNode",
+        "responseMode": "onReceived",
         "options": {}
       },
       "id": "fa000002-0000-0000-0000-000000000001",
@@ -74,27 +74,10 @@
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={ \"status\": \"ignored\" }",
-        "options": {
-          "responseCode": 200
-        }
-      },
-      "id": "fa000002-0000-0000-0000-000000000004",
-      "name": "Ignorar y Responder 200",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        1008,
-        688
-      ]
-    },
-    {
-      "parameters": {
         "promptType": "define",
         "text": "={{ $json.texto }}",
         "options": {
-          "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente que ayuda a los usuarios a gestionar sus finanzas personales a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero de WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nIMPORTANTE: Cuando uses cualquier herramienta que requiera el parametro 'numeroWhatsapp', SIEMPRE usa exactamente el valor: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n\nFLUJO DE AUTENTICACION:\nAntes de cualquier operacion financiera, SIEMPRE debes verificar el estado del usuario con la herramienta 'verificarEstadoAuth'.\n\n1. Si 'sesionActiva' es true: procede normalmente con la operacion financiera solicitada.\n2. Si 'sesionActiva' es false y 'cuentaExiste' es false: el usuario no tiene cuenta. Ofrecele DOS opciones:\n   a) Registrarse con email y contrasena (usa 'registrarUsuario')\n   b) Iniciar sesion con Google o GitHub (usa 'generarLinkOAuth' para generar un enlace). Enviale el enlace y dile que lo abra en su navegador para vincular su cuenta.\n3. Si 'sesionActiva' es false y 'cuentaExiste' es true: la sesion expiro. Ofrecele DOS opciones:\n   a) Verificacion con codigo OTP: usa 'solicitarCodigo' para generar un OTP. Indica al usuario el codigo generado y pidele que lo confirme. Verificalo con 'verificarCodigo'.\n   b) Iniciar sesion con Google o GitHub: usa 'generarLinkOAuth' para generar un enlace. Enviale el enlace y dile que lo abra en su navegador.\n\nCuando el usuario inicia sesion con OAuth (Google/GitHub), la sesion se crea automaticamente. En el siguiente mensaje, al verificar el estado, la sesion ya estara activa.\n\nSi cualquier herramienta financiera responde con un error que contenga 'sesion activa' o 'sesion', guia al usuario para autenticarse siguiendo el flujo anterior.\n\nCAPACIDADES DISPONIBLES:\n- Consultar balance general (ingresos, gastos, ahorros, dinero disponible)\n- Ver resumen del mes actual con desglose de gastos por categoria\n- Registrar ingresos con su categoria y descripcion\n- Registrar gastos con su categoria y descripcion\n- Registrar ahorros, opcionalmente asociados a una meta\n- Consultar metas financieras activas y su porcentaje de avance\n\nCATEGORIAS DE INGRESOS (usar exactamente una de estas):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente una de estas):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS\n\nINSTRUCCIONES DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, con un tono amigable, claro y conciso\n- Si los datos para registrar un movimiento son claros en el mensaje, procede directamente sin confirmar\n- Si falta un dato esencial (por ejemplo el monto), pregunta por el antes de actuar\n- Usa SOLO texto plano en tus respuestas, sin markdown, asteriscos ni formato especial, porque el mensaje se envia por WhatsApp\n- Los montos se manejan en pesos colombianos (COP)\n- Cuando un usuario nuevo se registra, guialo paso a paso de forma clara y amigable\n- Cuando ofrezcas iniciar sesion con OAuth, envia el enlace directamente al usuario para que lo pueda abrir"
+          "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente que ayuda a los usuarios a gestionar sus finanzas personales a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero de WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nIMPORTANTE: Cuando uses cualquier herramienta que requiera el parametro 'numeroWhatsapp', SIEMPRE usa exactamente el valor: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n\nFLUJO DE AUTENTICACION:\nAntes de cualquier operacion financiera, SIEMPRE debes verificar el estado del usuario con la herramienta 'verificarEstadoAuth'.\n\n1. Si 'sesionActiva' es true: procede normalmente con la operacion financiera solicitada.\n2. Si 'sesionActiva' es false y 'cuentaExiste' es false: el usuario no tiene cuenta. Ofrecele DOS opciones:\n   a) Registrarse con email y contrasena (usa 'registrarUsuario')\n   b) Iniciar sesion con Google o GitHub (usa 'generarLinkOAuth' para generar un enlace). Enviale el enlace y dile que lo abra en su navegador para vincular su cuenta.\n3. Si 'sesionActiva' es false y 'cuentaExiste' es true: la sesion expiro. Ofrecele DOS opciones:\n   a) Verificacion con codigo OTP: usa 'solicitarCodigo' para generar un OTP. Indica al usuario el codigo generado y pidele que lo confirme. Verificalo con 'verificarCodigo'.\n   b) Iniciar sesion con Google o GitHub: usa 'generarLinkOAuth' para generar un enlace. Enviale el enlace y dile que lo abra en su navegador.\n\nCuando el usuario inicia sesion con OAuth (Google/GitHub), la sesion se crea automaticamente. En el siguiente mensaje, al verificar el estado, la sesion ya estara activa.\n\nSi cualquier herramienta financiera responde con un error que contenga 'sesion activa' o 'sesion', guia al usuario para autenticarse siguiendo el flujo anterior.\n\nCAPACIDADES DISPONIBLES:\n\nBasicas:\n- Consultar balance general (ingresos, gastos, ahorros, dinero disponible)\n- Ver resumen del mes actual con desglose de gastos por categoria\n- Registrar ingresos con su categoria y descripcion\n- Registrar gastos con su categoria y descripcion\n- Registrar ahorros, opcionalmente asociados a una meta\n- Consultar metas financieras activas y su porcentaje de avance\n\nDeudas y Prestamos:\n- Registrar deudas (dinero que debo) y prestamos (dinero que me deben) con descripcion, monto, entidad y fecha limite\n- Consultar lista de deudas y prestamos con montos pendientes, abonados y porcentaje de avance\n- Registrar abonos o pagos parciales/totales a deudas\n- Ver resumen general de deudas y prestamos pendientes\n- Consultar historial de abonos de una deuda especifica\n- Tipos: DEUDA (dinero que debo), PRESTAMO (dinero que me deben)\n\nInversiones:\n- Registrar inversiones con nombre, monto y retorno esperado\n- Consultar inversiones activas y finalizadas con sus retornos\n- Registrar el retorno real de una inversion (se calcula ganancia o perdida automaticamente)\n\nAnalisis Financiero:\n- Obtener un analisis financiero completo con balance, desglose de gastos, estado de metas, deudas pendientes, inversiones activas y tasa de ahorro\n\nCATEGORIAS DE INGRESOS (usar exactamente una de estas):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente una de estas):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS\n\nINSTRUCCIONES DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, con un tono amigable, claro y conciso\n- Si los datos para registrar un movimiento son claros en el mensaje, procede directamente sin confirmar\n- Si falta un dato esencial (por ejemplo el monto), pregunta por el antes de actuar\n- Usa SOLO texto plano en tus respuestas, sin markdown, asteriscos ni formato especial, porque el mensaje se envia por WhatsApp\n- Los montos se manejan en pesos colombianos (COP)\n- Cuando un usuario nuevo se registra, guialo paso a paso de forma clara y amigable\n- Cuando ofrezcas iniciar sesion con OAuth, envia el enlace directamente al usuario para que lo pueda abrir\n- Para deudas e inversiones que requieren un ID, primero consulta la lista para obtener el ID correcto"
         }
       },
       "id": "fa000002-0000-0000-0000-000000000005",
@@ -102,7 +85,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        1600,
+        1940,
         400
       ]
     },
@@ -122,7 +105,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
       "typeVersion": 1.3,
       "position": [
-        1392,
+        1740,
         624
       ],
       "alwaysOutputData": true,
@@ -247,24 +230,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1880,
-        400
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={ \"status\": \"ok\" }",
-        "options": {
-          "responseCode": 200
-        }
-      },
-      "id": "fa000002-0000-0000-0000-000000000014",
-      "name": "Responder 200 OK a Evolution",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        2120,
+        2220,
         400
       ]
     },
@@ -340,7 +306,7 @@
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "id": "fa000002-0000-0000-0000-000000000019",
       "position": [
-        1568,
+        1920,
         624
       ],
       "name": "Memoria Conversacion",
@@ -498,20 +464,268 @@
         1504,
         1200
       ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Registra una deuda (dinero que debo) o prestamo (dinero que me deben). Requiere tipo (DEUDA o PRESTAMO), descripcion y montoTotal. Opcionalmente entidad, categoria y fechaLimite.",
+        "method": "POST",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo=={{ $fromAI('tipo', 'Tipo: DEUDA o PRESTAMO', 'string') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion de la deuda o prestamo', 'string') }}&montoTotal=={{ $fromAI('montoTotal', 'Monto total de la deuda', 'number') }}&entidad=={{ $fromAI('entidad', 'Persona o entidad. Vacio si no aplica', 'string') }}&fechaLimite=={{ $fromAI('fechaLimite', 'Fecha limite YYYY-MM-DD o vacio', 'string') }}"
+      },
+      "id": "fa000002-0000-0000-0000-000000000026",
+      "name": "Tool: Crear Deuda",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta las deudas y prestamos del usuario. Puede filtrar por tipo: DEUDA o PRESTAMO. Muestra monto total, abonado, restante y porcentaje de avance.",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deudas?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo=={{ $fromAI('tipo', 'Filtrar: DEUDA, PRESTAMO o vacio para todos', 'string') }}"
+      },
+      "id": "fa000002-0000-0000-0000-000000000027",
+      "name": "Tool: Consultar Deudas",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Registra un abono o pago a una deuda o prestamo. Requiere el ID de la deuda y el monto. Primero consulta las deudas para obtener el ID.",
+        "method": "POST",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda/={{ $fromAI('deudaId', 'ID UUID de la deuda', 'string') }}/abono?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto=={{ $fromAI('monto', 'Monto del abono', 'number') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion del abono o vacio', 'string') }}&metodoPago=={{ $fromAI('metodoPago', 'Metodo: EFECTIVO, NEQUI, BANCOLOMBIA, OTRO', 'string') }}"
+      },
+      "id": "fa000002-0000-0000-0000-000000000028",
+      "name": "Tool: Abonar Deuda",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        1776
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Obtiene resumen total de deudas pendientes, prestamos por cobrar y abonos recibidos.",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deudas/resumen?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+      },
+      "id": "fa000002-0000-0000-0000-000000000029",
+      "name": "Tool: Resumen Deudas",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        1920
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta historial de abonos de una deuda o prestamo especifico. Requiere el ID de la deuda.",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda/={{ $fromAI('deudaId', 'ID UUID de la deuda', 'string') }}/abonos?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+      },
+      "id": "fa000002-0000-0000-0000-000000000030",
+      "name": "Tool: Historial Abonos",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        2064
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Registra una nueva inversion con nombre, monto y retorno esperado opcional. Al crearla se descuenta del balance como gasto.",
+        "method": "POST",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&nombre=={{ $fromAI('nombre', 'Nombre de la inversion', 'string') }}&monto=={{ $fromAI('monto', 'Monto a invertir', 'number') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion o vacio', 'string') }}&retornoEsperado=={{ $fromAI('retornoEsperado', 'Retorno esperado o vacio', 'number') }}"
+      },
+      "id": "fa000002-0000-0000-0000-000000000031",
+      "name": "Tool: Crear Inversion",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1504,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta inversiones del usuario. Filtrar por estado: ACTIVA o FINALIZADA. Muestra monto invertido, retorno esperado y fecha.",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversiones?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&estado=={{ $fromAI('estado', 'Filtrar: ACTIVA, FINALIZADA o vacio para todas', 'string') }}"
+      },
+      "id": "fa000002-0000-0000-0000-000000000032",
+      "name": "Tool: Consultar Inversiones",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1504,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Registra retorno real de una inversion y la marca finalizada. Requiere ID de inversion y monto obtenido. Muestra ganancia o perdida.",
+        "method": "POST",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion/={{ $fromAI('inversionId', 'ID UUID de la inversion', 'string') }}/retorno?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&retornoReal=={{ $fromAI('retornoReal', 'Monto real obtenido', 'number') }}"
+      },
+      "id": "fa000002-0000-0000-0000-000000000033",
+      "name": "Tool: Registrar Retorno Inversion",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1504,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Analisis financiero completo: balance con deudas y prestamos, desglose gastos por categoria, metas activas, inversiones y tasa de ahorro. Usar para panorama financiero integral.",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/analisis?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+      },
+      "id": "fa000002-0000-0000-0000-000000000034",
+      "name": "Tool: Analisis Financiero",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1504,
+        1776
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://finanzapp-api:8080/api/v1/whatsapp/cola/guardar",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "telefono",
+              "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+            },
+            {
+              "name": "texto",
+              "value": "={{ $json.texto }}"
+            },
+            {
+              "name": "contacto",
+              "value": "={{ $('Extraer Datos Mensaje').first().json.contacto }}"
+            },
+            {
+              "name": "messageId",
+              "value": "={{ $('Extraer Datos Mensaje').first().json.messageId }}"
+            },
+            {
+              "name": "esAudio",
+              "value": "={{ $json.esAudio || false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000035",
+      "name": "Guardar en Cola",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "limit": 5,
+        "limitUnit": "seconds"
+      },
+      "id": "fa000002-0000-0000-0000-000000000036",
+      "name": "Esperar Acumulacion",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1160,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://finanzapp-api:8080/api/v1/whatsapp/cola/procesar",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "telefono",
+              "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+            },
+            {
+              "name": "colaId",
+              "value": "={{ $('Guardar en Cola').first().json.data.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000037",
+      "name": "Procesar Cola",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "debounce-check-001",
+              "leftValue": "={{ $json.data.hayMasRecientes }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fa000002-0000-0000-0000-000000000038",
+      "name": "Soy Ultimo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const respuesta = $input.first().json;\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n    instanceName: datosOriginales.instanceName,\n    texto: respuesta.data.textoCombinado,\n    mensajesAcumulados: respuesta.data.cantidadMensajes,\n    skip: false\n  }\n}];"
+      },
+      "id": "fa000002-0000-0000-0000-000000000039",
+      "name": "Preparar Texto Combinado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1700,
+        400
+      ]
     }
   ],
   "connections": {
-    "Enviar Respuesta Evolution API": {
-      "main": [
-        [
-          {
-            "node": "Responder 200 OK a Evolution",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Claude Sonnet 4": {
       "ai_languageModel": [
         [
@@ -686,13 +900,7 @@
             "index": 0
           }
         ],
-        [
-          {
-            "node": "Ignorar y Responder 200",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Es Audio?": {
@@ -706,7 +914,7 @@
         ],
         [
           {
-            "node": "Agente Financiero",
+            "node": "Guardar en Cola",
             "type": "main",
             "index": 0
           }
@@ -750,7 +958,7 @@
       "main": [
         [
           {
-            "node": "Agente Financiero",
+            "node": "Guardar en Cola",
             "type": "main",
             "index": 0
           }
@@ -763,6 +971,161 @@
           {
             "node": "Agente Financiero",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Crear Deuda": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Consultar Deudas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Abonar Deuda": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Resumen Deudas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Historial Abonos": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Crear Inversion": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Consultar Inversiones": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Registrar Retorno Inversion": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Analisis Financiero": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Cola": {
+      "main": [
+        [
+          {
+            "node": "Esperar Acumulacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar Acumulacion": {
+      "main": [
+        [
+          {
+            "node": "Procesar Cola",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Cola": {
+      "main": [
+        [
+          {
+            "node": "Soy Ultimo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Soy Ultimo?": {
+      "main": [
+        [
+          {
+            "node": "Preparar Texto Combinado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Preparar Texto Combinado": {
+      "main": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "main",
             "index": 0
           }
         ]
@@ -810,7 +1173,7 @@
         "parameters": {
           "httpMethod": "POST",
           "path": "whatsapp",
-          "responseMode": "responseNode",
+          "responseMode": "onReceived",
           "options": {}
         },
         "id": "fa000002-0000-0000-0000-000000000001",
@@ -873,27 +1236,10 @@
       },
       {
         "parameters": {
-          "respondWith": "json",
-          "responseBody": "={ \"status\": \"ignored\" }",
-          "options": {
-            "responseCode": 200
-          }
-        },
-        "id": "fa000002-0000-0000-0000-000000000004",
-        "name": "Ignorar y Responder 200",
-        "type": "n8n-nodes-base.respondToWebhook",
-        "typeVersion": 1.1,
-        "position": [
-          1008,
-          688
-        ]
-      },
-      {
-        "parameters": {
           "promptType": "define",
           "text": "={{ $json.texto }}",
           "options": {
-            "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente que ayuda a los usuarios a gestionar sus finanzas personales a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero de WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nIMPORTANTE: Cuando uses cualquier herramienta que requiera el parametro 'numeroWhatsapp', SIEMPRE usa exactamente el valor: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n\nFLUJO DE AUTENTICACION:\nAntes de cualquier operacion financiera, SIEMPRE debes verificar el estado del usuario con la herramienta 'verificarEstadoAuth'.\n\n1. Si 'sesionActiva' es true: procede normalmente con la operacion financiera solicitada.\n2. Si 'sesionActiva' es false y 'cuentaExiste' es false: el usuario no tiene cuenta. Preguntale si quiere registrarse. Necesitas: nombre, email y contrasena. Luego usa 'registrarUsuario'. Despues del registro, se genera un codigo de verificacion que debes indicarle al usuario (el codigo estara en la respuesta del registro). Pidele que te escriba el codigo y verificalo con 'verificarCodigo'.\n3. Si 'sesionActiva' es false y 'cuentaExiste' es true: la sesion expiro. Usa 'solicitarCodigo' para generar un nuevo OTP. Indica al usuario el codigo generado y pidele que lo confirme. Verificalo con 'verificarCodigo'.\n\nSi cualquier herramienta financiera responde con un error que contenga 'sesion activa' o 'sesion', guia al usuario para autenticarse siguiendo el flujo anterior.\n\nCAPACIDADES DISPONIBLES:\n- Consultar balance general (ingresos, gastos, ahorros, dinero disponible)\n- Ver resumen del mes actual con desglose de gastos por categoria\n- Registrar ingresos con su categoria y descripcion\n- Registrar gastos con su categoria y descripcion\n- Registrar ahorros, opcionalmente asociados a una meta\n- Consultar metas financieras activas y su porcentaje de avance\n\nCATEGORIAS DE INGRESOS (usar exactamente una de estas):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente una de estas):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS\n\nINSTRUCCIONES DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, con un tono amigable, claro y conciso\n- Si los datos para registrar un movimiento son claros en el mensaje, procede directamente sin confirmar\n- Si falta un dato esencial (por ejemplo el monto), pregunta por el antes de actuar\n- Usa SOLO texto plano en tus respuestas, sin markdown, asteriscos ni formato especial, porque el mensaje se envia por WhatsApp\n- Los montos se manejan en pesos colombianos (COP)\n- Cuando un usuario nuevo se registra, guialo paso a paso de forma clara y amigable"
+            "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente que ayuda a los usuarios a gestionar sus finanzas personales a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero de WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nIMPORTANTE: Cuando uses cualquier herramienta que requiera el parametro 'numeroWhatsapp', SIEMPRE usa exactamente el valor: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n\nFLUJO DE AUTENTICACION:\nAntes de cualquier operacion financiera, SIEMPRE debes verificar el estado del usuario con la herramienta 'verificarEstadoAuth'.\n\n1. Si 'sesionActiva' es true: procede normalmente con la operacion financiera solicitada.\n2. Si 'sesionActiva' es false y 'cuentaExiste' es false: el usuario no tiene cuenta. Ofrecele DOS opciones:\n   a) Registrarse con email y contrasena (usa 'registrarUsuario')\n   b) Iniciar sesion con Google o GitHub (usa 'generarLinkOAuth' para generar un enlace). Enviale el enlace y dile que lo abra en su navegador para vincular su cuenta.\n3. Si 'sesionActiva' es false y 'cuentaExiste' es true: la sesion expiro. Ofrecele DOS opciones:\n   a) Verificacion con codigo OTP: usa 'solicitarCodigo' para generar un OTP. Indica al usuario el codigo generado y pidele que lo confirme. Verificalo con 'verificarCodigo'.\n   b) Iniciar sesion con Google o GitHub: usa 'generarLinkOAuth' para generar un enlace. Enviale el enlace y dile que lo abra en su navegador.\n\nCuando el usuario inicia sesion con OAuth (Google/GitHub), la sesion se crea automaticamente. En el siguiente mensaje, al verificar el estado, la sesion ya estara activa.\n\nSi cualquier herramienta financiera responde con un error que contenga 'sesion activa' o 'sesion', guia al usuario para autenticarse siguiendo el flujo anterior.\n\nCAPACIDADES DISPONIBLES:\n\nBasicas:\n- Consultar balance general (ingresos, gastos, ahorros, dinero disponible)\n- Ver resumen del mes actual con desglose de gastos por categoria\n- Registrar ingresos con su categoria y descripcion\n- Registrar gastos con su categoria y descripcion\n- Registrar ahorros, opcionalmente asociados a una meta\n- Consultar metas financieras activas y su porcentaje de avance\n\nDeudas y Prestamos:\n- Registrar deudas (dinero que debo) y prestamos (dinero que me deben) con descripcion, monto, entidad y fecha limite\n- Consultar lista de deudas y prestamos con montos pendientes, abonados y porcentaje de avance\n- Registrar abonos o pagos parciales/totales a deudas\n- Ver resumen general de deudas y prestamos pendientes\n- Consultar historial de abonos de una deuda especifica\n- Tipos: DEUDA (dinero que debo), PRESTAMO (dinero que me deben)\n\nInversiones:\n- Registrar inversiones con nombre, monto y retorno esperado\n- Consultar inversiones activas y finalizadas con sus retornos\n- Registrar el retorno real de una inversion (se calcula ganancia o perdida automaticamente)\n\nAnalisis Financiero:\n- Obtener un analisis financiero completo con balance, desglose de gastos, estado de metas, deudas pendientes, inversiones activas y tasa de ahorro\n\nCATEGORIAS DE INGRESOS (usar exactamente una de estas):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente una de estas):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS\n\nINSTRUCCIONES DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, con un tono amigable, claro y conciso\n- Si los datos para registrar un movimiento son claros en el mensaje, procede directamente sin confirmar\n- Si falta un dato esencial (por ejemplo el monto), pregunta por el antes de actuar\n- Usa SOLO texto plano en tus respuestas, sin markdown, asteriscos ni formato especial, porque el mensaje se envia por WhatsApp\n- Los montos se manejan en pesos colombianos (COP)\n- Cuando un usuario nuevo se registra, guialo paso a paso de forma clara y amigable\n- Cuando ofrezcas iniciar sesion con OAuth, envia el enlace directamente al usuario para que lo pueda abrir\n- Para deudas e inversiones que requieren un ID, primero consulta la lista para obtener el ID correcto"
           }
         },
         "id": "fa000002-0000-0000-0000-000000000005",
@@ -901,7 +1247,7 @@
         "type": "@n8n/n8n-nodes-langchain.agent",
         "typeVersion": 1.7,
         "position": [
-          1600,
+          1940,
           400
         ]
       },
@@ -921,7 +1267,7 @@
         "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
         "typeVersion": 1.3,
         "position": [
-          1392,
+          1740,
           624
         ],
         "alwaysOutputData": true,
@@ -1046,24 +1392,7 @@
         "type": "n8n-nodes-base.httpRequest",
         "typeVersion": 4.2,
         "position": [
-          1880,
-          400
-        ]
-      },
-      {
-        "parameters": {
-          "respondWith": "json",
-          "responseBody": "={ \"status\": \"ok\" }",
-          "options": {
-            "responseCode": 200
-          }
-        },
-        "id": "fa000002-0000-0000-0000-000000000014",
-        "name": "Responder 200 OK a Evolution",
-        "type": "n8n-nodes-base.respondToWebhook",
-        "typeVersion": 1.1,
-        "position": [
-          2120,
+          2220,
           400
         ]
       },
@@ -1139,7 +1468,7 @@
         "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
         "id": "fa000002-0000-0000-0000-000000000019",
         "position": [
-          1568,
+          1920,
           624
         ],
         "name": "Memoria Conversacion",
@@ -1282,20 +1611,268 @@
           1700,
           180
         ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Registra una deuda (dinero que debo) o prestamo (dinero que me deben). Requiere tipo (DEUDA o PRESTAMO), descripcion y montoTotal. Opcionalmente entidad, categoria y fechaLimite.",
+          "method": "POST",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo=={{ $fromAI('tipo', 'Tipo: DEUDA o PRESTAMO', 'string') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion de la deuda o prestamo', 'string') }}&montoTotal=={{ $fromAI('montoTotal', 'Monto total de la deuda', 'number') }}&entidad=={{ $fromAI('entidad', 'Persona o entidad. Vacio si no aplica', 'string') }}&fechaLimite=={{ $fromAI('fechaLimite', 'Fecha limite YYYY-MM-DD o vacio', 'string') }}"
+        },
+        "id": "fa000002-0000-0000-0000-000000000026",
+        "name": "Tool: Crear Deuda",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          1488
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Consulta las deudas y prestamos del usuario. Puede filtrar por tipo: DEUDA o PRESTAMO. Muestra monto total, abonado, restante y porcentaje de avance.",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deudas?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&tipo=={{ $fromAI('tipo', 'Filtrar: DEUDA, PRESTAMO o vacio para todos', 'string') }}"
+        },
+        "id": "fa000002-0000-0000-0000-000000000027",
+        "name": "Tool: Consultar Deudas",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          1632
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Registra un abono o pago a una deuda o prestamo. Requiere el ID de la deuda y el monto. Primero consulta las deudas para obtener el ID.",
+          "method": "POST",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda/={{ $fromAI('deudaId', 'ID UUID de la deuda', 'string') }}/abono?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto=={{ $fromAI('monto', 'Monto del abono', 'number') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion del abono o vacio', 'string') }}&metodoPago=={{ $fromAI('metodoPago', 'Metodo: EFECTIVO, NEQUI, BANCOLOMBIA, OTRO', 'string') }}"
+        },
+        "id": "fa000002-0000-0000-0000-000000000028",
+        "name": "Tool: Abonar Deuda",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          1776
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Obtiene resumen total de deudas pendientes, prestamos por cobrar y abonos recibidos.",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deudas/resumen?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+        },
+        "id": "fa000002-0000-0000-0000-000000000029",
+        "name": "Tool: Resumen Deudas",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          1920
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Consulta historial de abonos de una deuda o prestamo especifico. Requiere el ID de la deuda.",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/deuda/={{ $fromAI('deudaId', 'ID UUID de la deuda', 'string') }}/abonos?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+        },
+        "id": "fa000002-0000-0000-0000-000000000030",
+        "name": "Tool: Historial Abonos",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          2064
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Registra una nueva inversion con nombre, monto y retorno esperado opcional. Al crearla se descuenta del balance como gasto.",
+          "method": "POST",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&nombre=={{ $fromAI('nombre', 'Nombre de la inversion', 'string') }}&monto=={{ $fromAI('monto', 'Monto a invertir', 'number') }}&descripcion=={{ $fromAI('descripcion', 'Descripcion o vacio', 'string') }}&retornoEsperado=={{ $fromAI('retornoEsperado', 'Retorno esperado o vacio', 'number') }}"
+        },
+        "id": "fa000002-0000-0000-0000-000000000031",
+        "name": "Tool: Crear Inversion",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1504,
+          1344
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Consulta inversiones del usuario. Filtrar por estado: ACTIVA o FINALIZADA. Muestra monto invertido, retorno esperado y fecha.",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversiones?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&estado=={{ $fromAI('estado', 'Filtrar: ACTIVA, FINALIZADA o vacio para todas', 'string') }}"
+        },
+        "id": "fa000002-0000-0000-0000-000000000032",
+        "name": "Tool: Consultar Inversiones",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1504,
+          1488
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Registra retorno real de una inversion y la marca finalizada. Requiere ID de inversion y monto obtenido. Muestra ganancia o perdida.",
+          "method": "POST",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/inversion/={{ $fromAI('inversionId', 'ID UUID de la inversion', 'string') }}/retorno?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&retornoReal=={{ $fromAI('retornoReal', 'Monto real obtenido', 'number') }}"
+        },
+        "id": "fa000002-0000-0000-0000-000000000033",
+        "name": "Tool: Registrar Retorno Inversion",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1504,
+          1632
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Analisis financiero completo: balance con deudas y prestamos, desglose gastos por categoria, metas activas, inversiones y tasa de ahorro. Usar para panorama financiero integral.",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/analisis?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+        },
+        "id": "fa000002-0000-0000-0000-000000000034",
+        "name": "Tool: Analisis Financiero",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1504,
+          1776
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://finanzapp-api:8080/api/v1/whatsapp/cola/guardar",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "telefono",
+                "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+              },
+              {
+                "name": "texto",
+                "value": "={{ $json.texto }}"
+              },
+              {
+                "name": "contacto",
+                "value": "={{ $('Extraer Datos Mensaje').first().json.contacto }}"
+              },
+              {
+                "name": "messageId",
+                "value": "={{ $('Extraer Datos Mensaje').first().json.messageId }}"
+              },
+              {
+                "name": "esAudio",
+                "value": "={{ $json.esAudio || false }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000035",
+        "name": "Guardar en Cola",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          960,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "resume": "timeInterval",
+          "limit": 5,
+          "limitUnit": "seconds"
+        },
+        "id": "fa000002-0000-0000-0000-000000000036",
+        "name": "Esperar Acumulacion",
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          1160,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://finanzapp-api:8080/api/v1/whatsapp/cola/procesar",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "telefono",
+                "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+              },
+              {
+                "name": "colaId",
+                "value": "={{ $('Guardar en Cola').first().json.data.id }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000037",
+        "name": "Procesar Cola",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1360,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "debounce-check-001",
+                "leftValue": "={{ $json.data.hayMasRecientes }}",
+                "rightValue": false,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000038",
+        "name": "Soy Ultimo?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          1520,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const respuesta = $input.first().json;\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n    instanceName: datosOriginales.instanceName,\n    texto: respuesta.data.textoCombinado,\n    mensajesAcumulados: respuesta.data.cantidadMensajes,\n    skip: false\n  }\n}];"
+        },
+        "id": "fa000002-0000-0000-0000-000000000039",
+        "name": "Preparar Texto Combinado",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1700,
+          400
+        ]
       }
     ],
     "connections": {
-      "Enviar Respuesta Evolution API": {
-        "main": [
-          [
-            {
-              "node": "Responder 200 OK a Evolution",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
       "Claude Sonnet 4": {
         "ai_languageModel": [
           [
@@ -1470,13 +2047,7 @@
               "index": 0
             }
           ],
-          [
-            {
-              "node": "Ignorar y Responder 200",
-              "type": "main",
-              "index": 0
-            }
-          ]
+          []
         ]
       },
       "Es Audio?": {
@@ -1490,7 +2061,7 @@
           ],
           [
             {
-              "node": "Agente Financiero",
+              "node": "Guardar en Cola",
               "type": "main",
               "index": 0
             }
@@ -1531,6 +2102,161 @@
         ]
       },
       "Preparar Texto Transcrito": {
+        "main": [
+          [
+            {
+              "node": "Guardar en Cola",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Crear Deuda": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Consultar Deudas": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Abonar Deuda": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Resumen Deudas": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Historial Abonos": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Crear Inversion": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Consultar Inversiones": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Registrar Retorno Inversion": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Analisis Financiero": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Guardar en Cola": {
+        "main": [
+          [
+            {
+              "node": "Esperar Acumulacion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Esperar Acumulacion": {
+        "main": [
+          [
+            {
+              "node": "Procesar Cola",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Procesar Cola": {
+        "main": [
+          [
+            {
+              "node": "Soy Ultimo?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Soy Ultimo?": {
+        "main": [
+          [
+            {
+              "node": "Preparar Texto Combinado",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Preparar Texto Combinado": {
         "main": [
           [
             {
