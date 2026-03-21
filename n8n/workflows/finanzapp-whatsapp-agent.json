@@ -1,6 +1,6 @@
 {
   "updatedAt": "2026-03-19T04:14:02.623Z",
-  "createdAt": "2026-03-18T22:01:29.530Z",
+  "createdAt": "2026-03-18T22:01:29.53Z",
   "id": "JL7XSvzAgrCHaFol",
   "name": "FinanzApp - Agente Financiero WhatsApp (Evolution API)",
   "description": null,
@@ -94,7 +94,7 @@
         "promptType": "define",
         "text": "={{ $json.texto }}",
         "options": {
-          "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente que ayuda a los usuarios a gestionar sus finanzas personales a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero de WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nIMPORTANTE: Cuando uses cualquier herramienta que requiera el parametro 'numeroWhatsapp', SIEMPRE usa exactamente el valor: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n\nFLUJO DE AUTENTICACION:\nAntes de cualquier operacion financiera, SIEMPRE debes verificar el estado del usuario con la herramienta 'verificarEstadoAuth'.\n\n1. Si 'sesionActiva' es true: procede normalmente con la operacion financiera solicitada.\n2. Si 'sesionActiva' es false y 'cuentaExiste' es false: el usuario no tiene cuenta. Preguntale si quiere registrarse. Necesitas: nombre, email y contrasena. Luego usa 'registrarUsuario'. Despues del registro, se genera un codigo de verificacion que debes indicarle al usuario (el codigo estara en la respuesta del registro). Pidele que te escriba el codigo y verificalo con 'verificarCodigo'.\n3. Si 'sesionActiva' es false y 'cuentaExiste' es true: la sesion expiro. Usa 'solicitarCodigo' para generar un nuevo OTP. Indica al usuario el codigo generado y pidele que lo confirme. Verificalo con 'verificarCodigo'.\n\nSi cualquier herramienta financiera responde con un error que contenga 'sesion activa' o 'sesion', guia al usuario para autenticarse siguiendo el flujo anterior.\n\nCAPACIDADES DISPONIBLES:\n- Consultar balance general (ingresos, gastos, ahorros, dinero disponible)\n- Ver resumen del mes actual con desglose de gastos por categoria\n- Registrar ingresos con su categoria y descripcion\n- Registrar gastos con su categoria y descripcion\n- Registrar ahorros, opcionalmente asociados a una meta\n- Consultar metas financieras activas y su porcentaje de avance\n\nCATEGORIAS DE INGRESOS (usar exactamente una de estas):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente una de estas):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS\n\nINSTRUCCIONES DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, con un tono amigable, claro y conciso\n- Si los datos para registrar un movimiento son claros en el mensaje, procede directamente sin confirmar\n- Si falta un dato esencial (por ejemplo el monto), pregunta por el antes de actuar\n- Usa SOLO texto plano en tus respuestas, sin markdown, asteriscos ni formato especial, porque el mensaje se envia por WhatsApp\n- Los montos se manejan en pesos colombianos (COP)\n- Cuando un usuario nuevo se registra, guialo paso a paso de forma clara y amigable"
+          "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente que ayuda a los usuarios a gestionar sus finanzas personales a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero de WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nIMPORTANTE: Cuando uses cualquier herramienta que requiera el parametro 'numeroWhatsapp', SIEMPRE usa exactamente el valor: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n\nFLUJO DE AUTENTICACION:\nAntes de cualquier operacion financiera, SIEMPRE debes verificar el estado del usuario con la herramienta 'verificarEstadoAuth'.\n\n1. Si 'sesionActiva' es true: procede normalmente con la operacion financiera solicitada.\n2. Si 'sesionActiva' es false y 'cuentaExiste' es false: el usuario no tiene cuenta. Ofrecele DOS opciones:\n   a) Registrarse con email y contrasena (usa 'registrarUsuario')\n   b) Iniciar sesion con Google o GitHub (usa 'generarLinkOAuth' para generar un enlace). Enviale el enlace y dile que lo abra en su navegador para vincular su cuenta.\n3. Si 'sesionActiva' es false y 'cuentaExiste' es true: la sesion expiro. Ofrecele DOS opciones:\n   a) Verificacion con codigo OTP: usa 'solicitarCodigo' para generar un OTP. Indica al usuario el codigo generado y pidele que lo confirme. Verificalo con 'verificarCodigo'.\n   b) Iniciar sesion con Google o GitHub: usa 'generarLinkOAuth' para generar un enlace. Enviale el enlace y dile que lo abra en su navegador.\n\nCuando el usuario inicia sesion con OAuth (Google/GitHub), la sesion se crea automaticamente. En el siguiente mensaje, al verificar el estado, la sesion ya estara activa.\n\nSi cualquier herramienta financiera responde con un error que contenga 'sesion activa' o 'sesion', guia al usuario para autenticarse siguiendo el flujo anterior.\n\nCAPACIDADES DISPONIBLES:\n- Consultar balance general (ingresos, gastos, ahorros, dinero disponible)\n- Ver resumen del mes actual con desglose de gastos por categoria\n- Registrar ingresos con su categoria y descripcion\n- Registrar gastos con su categoria y descripcion\n- Registrar ahorros, opcionalmente asociados a una meta\n- Consultar metas financieras activas y su porcentaje de avance\n\nCATEGORIAS DE INGRESOS (usar exactamente una de estas):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente una de estas):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS\n\nINSTRUCCIONES DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, con un tono amigable, claro y conciso\n- Si los datos para registrar un movimiento son claros en el mensaje, procede directamente sin confirmar\n- Si falta un dato esencial (por ejemplo el monto), pregunta por el antes de actuar\n- Usa SOLO texto plano en tus respuestas, sin markdown, asteriscos ni formato especial, porque el mensaje se envia por WhatsApp\n- Los montos se manejan en pesos colombianos (COP)\n- Cuando un usuario nuevo se registra, guialo paso a paso de forma clara y amigable\n- Cuando ofrezcas iniciar sesion con OAuth, envia el enlace directamente al usuario para que lo pueda abrir"
         }
       },
       "id": "fa000002-0000-0000-0000-000000000005",
@@ -223,13 +223,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=http://evolution-api:8080/message/sendText/finanzapp",
+        "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE_NAME }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "${EVOLUTION_API_KEY}"
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -482,6 +482,21 @@
       "position": [
         1700,
         180
+      ]
+    },
+    {
+      "name": "Tool: Generar Link OAuth",
+      "typeVersion": 1.1,
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "=http://finanzapp-api:8080/api/v1/whatsapp/auth/generar-link?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}",
+        "toolDescription": "Genera un enlace de inicio de sesion OAuth (Google/GitHub) para el usuario de WhatsApp. Usa esta herramienta cuando el usuario quiera iniciar sesion con Google o GitHub, o cuando no tenga cuenta y prefiera registrarse con OAuth. Devuelve una URL que el usuario debe abrir en su navegador para autenticarse. Despues de autenticarse, su cuenta queda automaticamente vinculada a su numero de WhatsApp."
+      },
+      "id": "fa000002-0000-0000-0000-000000000025",
+      "position": [
+        1504,
+        1200
       ]
     }
   ],
@@ -741,6 +756,17 @@
           }
         ]
       ]
+    },
+    "Tool: Generar Link OAuth": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Financiero",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -775,7 +801,7 @@
   "tags": [],
   "parentFolder": null,
   "activeVersion": {
-    "updatedAt": "2026-03-19T04:15:29.000Z",
+    "updatedAt": "2026-03-19T04:15:29Z",
     "createdAt": "2026-03-19T04:14:02.624Z",
     "versionId": "5c407d52-650d-4257-afb4-87a56694fbc7",
     "workflowId": "JL7XSvzAgrCHaFol",

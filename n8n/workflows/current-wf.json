@@ -1,0 +1,819 @@
+[
+  {
+    "updatedAt": "2026-03-19T21:21:24.000Z",
+    "createdAt": "2026-03-18T22:01:29.530Z",
+    "id": "JL7XSvzAgrCHaFol",
+    "name": "FinanzApp - Agente Financiero WhatsApp (Evolution API)",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "whatsapp",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000001",
+        "name": "Webhook Evolution API",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          80,
+          400
+        ],
+        "webhookId": "finanzapp-evolution-webhook"
+      },
+      {
+        "parameters": {
+          "jsCode": "const payload = $input.first().json.body;\nif (payload?.event !== 'messages.upsert') {\n  return [{ json: { skip: true, motivo: `Evento ignorado: ${payload?.event}` } }];\n}\nconst data = payload?.data;\nconst key = data?.key;\nif (key?.fromMe === true) {\n  return [{ json: { skip: true, motivo: 'Mensaje propio (fromMe)' } }];\n}\nconst remoteJid = key?.remoteJid || '';\nif (remoteJid.endsWith('@g.us')) {\n  return [{ json: { skip: true, motivo: 'Mensaje de grupo' } }];\n}\nconst telefono = remoteJid.split('@')[0];\nconst messageType = data?.messageType;\nconst message = data?.message;\nlet texto = null;\nlet esAudio = false;\nif (messageType === 'conversation') {\n  texto = message?.conversation ?? null;\n} else if (messageType === 'extendedTextMessage') {\n  texto = message?.extendedTextMessage?.text ?? null;\n} else if (messageType === 'audioMessage') {\n  esAudio = true;\n}\nreturn [{\n  json: {\n    telefono,\n    remoteJid,\n    tipo: messageType,\n    texto,\n    esAudio,\n    contacto: data?.pushName || telefono,\n    messageId: key?.id,\n    instanceName: payload?.instance,\n    skip: !texto && !esAudio\n  }\n}];"
+        },
+        "id": "fa000002-0000-0000-0000-000000000002",
+        "name": "Extraer Datos Mensaje",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          320,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "8b6d0029-9226-4de9-860f-196e933f2cc0",
+                "leftValue": "={{ $json.skip }}",
+                "rightValue": false,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "false",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {},
+          "looseTypeValidation": true
+        },
+        "id": "fa000002-0000-0000-0000-000000000003",
+        "name": "Es mensaje valido?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.1,
+        "position": [
+          560,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={ \"status\": \"ignored\" }",
+          "options": {
+            "responseCode": 200
+          }
+        },
+        "id": "fa000002-0000-0000-0000-000000000004",
+        "name": "Ignorar y Responder 200",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          1008,
+          688
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.texto }}",
+          "options": {
+            "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente que ayuda a los usuarios a gestionar sus finanzas personales a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero de WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nIMPORTANTE: Cuando uses cualquier herramienta que requiera el parametro 'numeroWhatsapp', SIEMPRE usa exactamente el valor: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n\nREGLA CRITICA SOBRE URLs Y ENLACES:\n- NUNCA inventes, generes o fabriques URLs, enlaces o tokens por tu cuenta.\n- Cuando necesites generar un enlace de login, SIEMPRE debes llamar a la herramienta 'Tool: Generar Link OAuth'. La URL real viene en la respuesta de esa herramienta en el campo 'url'.\n- Solo comparte URLs que provengan directamente de la respuesta de una herramienta. Si una herramienta no fue llamada, NO puedes tener una URL valida.\n- Si el usuario pide un nuevo enlace, SIEMPRE llama a la herramienta de nuevo, incluso si ya enviaste uno antes. Los enlaces anteriores pueden haber expirado.\n\nFLUJO DE AUTENTICACION:\nAntes de cualquier operacion financiera, SIEMPRE debes verificar el estado del usuario con la herramienta 'Tool: Verificar Estado Auth'.\n\n1. Si 'sesionActiva' es true: procede normalmente con la operacion financiera solicitada.\n2. Si 'sesionActiva' es false y 'cuentaExiste' es false: el usuario no tiene cuenta. Ofrecele DOS opciones:\n   a) Registrarse con email y contrasena (usa 'Tool: Registrar Usuario')\n   b) Iniciar sesion con Google o GitHub: LLAMA a la herramienta 'Tool: Generar Link OAuth' y comparte la URL de la respuesta.\n3. Si 'sesionActiva' es false y 'cuentaExiste' es true: la sesion expiro. Ofrecele DOS opciones:\n   a) Verificacion con codigo OTP: usa 'Tool: Solicitar Codigo' para generar un OTP. Indica al usuario el codigo generado y pidele que lo confirme. Verificalo con 'Tool: Verificar Codigo'.\n   b) Iniciar sesion con Google o GitHub: LLAMA a la herramienta 'Tool: Generar Link OAuth' y comparte la URL de la respuesta.\n\nCuando el usuario inicia sesion con OAuth (Google/GitHub), la sesion se crea automaticamente. En el siguiente mensaje, al verificar el estado, la sesion ya estara activa.\n\nSi cualquier herramienta financiera responde con un error que contenga 'sesion activa' o 'sesion', guia al usuario para autenticarse siguiendo el flujo anterior.\n\nCAPACIDADES DISPONIBLES:\n- Consultar balance general (ingresos, gastos, ahorros, dinero disponible)\n- Ver resumen del mes actual con desglose de gastos por categoria\n- Registrar ingresos con su categoria y descripcion\n- Registrar gastos con su categoria y descripcion\n- Registrar ahorros, opcionalmente asociados a una meta\n- Consultar metas financieras activas y su porcentaje de avance\n\nCATEGORIAS DE INGRESOS (usar exactamente una de estas):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente una de estas):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS\n\nINSTRUCCIONES DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, con un tono amigable, claro y conciso\n- Si los datos para registrar un movimiento son claros en el mensaje, procede directamente sin confirmar\n- Si falta un dato esencial (por ejemplo el monto), pregunta por el antes de actuar\n- Usa SOLO texto plano en tus respuestas, sin markdown, asteriscos ni formato especial, porque el mensaje se envia por WhatsApp\n- Los montos se manejan en pesos colombianos (COP)\n- Cuando un usuario nuevo se registra, guialo paso a paso de forma clara y amigable\n- Cuando ofrezcas iniciar sesion con OAuth, PRIMERO llama a la herramienta y LUEGO envia el enlace real de la respuesta"
+          }
+        },
+        "id": "fa000002-0000-0000-0000-000000000005",
+        "name": "Agente Financiero",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.7,
+        "position": [
+          1600,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "claude-haiku-4-5-20251001",
+            "mode": "id"
+          },
+          "options": {
+            "maxTokensToSample": 1024
+          }
+        },
+        "id": "fa000002-0000-0000-0000-000000000006",
+        "name": "Claude Sonnet 4",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+        "typeVersion": 1.3,
+        "position": [
+          1392,
+          624
+        ],
+        "alwaysOutputData": true,
+        "credentials": {
+          "anthropicApi": {
+            "id": "ybr86TveZfUNxXHu",
+            "name": "Anthropic API Key"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "toolDescription": "Consulta el balance financiero general del usuario. Devuelve ingresos totales, gastos totales, ahorros totales y dinero disponible.",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/balance?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}",
+          "description": "Consulta el balance financiero general del usuario. Retorna total de ingresos, total de gastos, total de ahorros y dinero disponible. Usa esta herramienta cuando el usuario pregunte por su balance, cuanto dinero tiene disponible, o su situacion financiera general."
+        },
+        "id": "fa000002-0000-0000-0000-000000000007",
+        "name": "Tool: Consultar Balance",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          640
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Obtiene el resumen financiero del mes actual con ingresos, gastos, ahorros y desglose de gastos por categoria.",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/resumen-mes?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}",
+          "description": "Obtiene un resumen financiero del mes actual con desglose de gastos por categoria. Usa esta herramienta cuando el usuario pregunte que ha gastado este mes, quiera ver un resumen mensual, o necesite saber en que se ha ido su dinero."
+        },
+        "id": "fa000002-0000-0000-0000-000000000008",
+        "name": "Tool: Resumen del Mes",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          784
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Registra un ingreso de dinero. Requiere monto y categoria. Categorias validas: TRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS.",
+          "method": "POST",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/ingreso?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto={{ $fromAI('monto', 'Monto del ingreso en pesos colombianos', 'number') }}&categoria={{ $fromAI('categoria', 'Categoria: TRABAJO_PRINCIPAL TRABAJO_EXTRA GANANCIAS_ADICIONALES INVERSIONES OTROS', 'string') }}&descripcion={{ $fromAI('descripcion', 'Descripcion breve del ingreso', 'string') }}",
+          "description": "Registra un nuevo ingreso de dinero. Requiere monto, categoria y descripcion. Categorias validas: TRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS. Usa esta herramienta cuando el usuario diga que recibio dinero, le pagaron, tuvo un ingreso, etc."
+        },
+        "id": "fa000002-0000-0000-0000-000000000009",
+        "name": "Tool: Registrar Ingreso",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          928
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Registra un gasto de dinero. Requiere monto y categoria. Categorias validas: COMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS.",
+          "method": "POST",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/gasto?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto={{ $fromAI('monto', 'Monto del gasto en pesos colombianos', 'number') }}&categoria={{ $fromAI('categoria', 'Categoria: COMIDA PAREJA COMPRAS TRANSPORTE SERVICIOS ENTRETENIMIENTO SALUD EDUCACION OTROS', 'string') }}&descripcion={{ $fromAI('descripcion', 'Descripcion breve del gasto', 'string') }}",
+          "description": "Registra un nuevo gasto de dinero. Requiere monto, categoria y descripcion. Categorias validas: COMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, OTROS. Usa esta herramienta cuando el usuario diga que gasto dinero, compro algo, pago algo, etc."
+        },
+        "id": "fa000002-0000-0000-0000-000000000010",
+        "name": "Tool: Registrar Gasto",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          1072
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Registra un ahorro. Requiere monto. Opcionalmente puede asociarse a una meta financiera con metaId.",
+          "method": "POST",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/ahorro?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&monto={{ $fromAI('monto', 'Monto a ahorrar en pesos colombianos', 'number') }}&descripcion={{ $fromAI('descripcion', 'Descripcion del ahorro', 'string') }}&metaId={{ $fromAI('metaId', 'ID de la meta financiera asociada o vacio si no aplica', 'string') }}",
+          "description": "Registra un nuevo ahorro. Requiere monto y descripcion. Opcionalmente puede asociarse a una meta financiera con metaId. Usa esta herramienta cuando el usuario quiera ahorrar dinero o guardar dinero para algo."
+        },
+        "id": "fa000002-0000-0000-0000-000000000011",
+        "name": "Tool: Registrar Ahorro",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          1200
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Consulta las metas financieras activas con su progreso: nombre, monto objetivo, monto actual y porcentaje de avance.",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/metas?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}",
+          "description": "Obtiene las metas financieras del usuario con su progreso. Muestra monto objetivo, monto actual y porcentaje de avance. Usa esta herramienta cuando el usuario pregunte por sus metas, objetivos de ahorro o cuanto le falta para una meta."
+        },
+        "id": "fa000002-0000-0000-0000-000000000012",
+        "name": "Tool: Consultar Metas",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1100,
+          1344
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE_NAME }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "={{ $env.EVOLUTION_API_KEY }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"number\": \"{{ $('Extraer Datos Mensaje').first().json.telefono }}\",\n  \"text\": {{ JSON.stringify($json.output) }}\n}",
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000013",
+        "name": "Enviar Respuesta Evolution API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1880,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={ \"status\": \"ok\" }",
+          "options": {
+            "responseCode": 200
+          }
+        },
+        "id": "fa000002-0000-0000-0000-000000000014",
+        "name": "Responder 200 OK a Evolution",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          2120,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Verifica el estado de autenticacion del usuario de WhatsApp. Devuelve sesionActiva (boolean), cuentaExiste (boolean), dispositivoRegistrado y dispositivoVerificado. SIEMPRE usar antes de cualquier operacion financiera.",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/auth/estado?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}",
+          "description": "HERRAMIENTA OBLIGATORIA. Verifica si el usuario de WhatsApp tiene una sesion activa. Retorna 'sesionActiva' (true/false) y 'cuentaExiste' (true/false). DEBES llamar esta herramienta SIEMPRE ANTES de cualquier operacion financiera para verificar que el usuario esta autenticado."
+        },
+        "id": "fa000002-0000-0000-0000-000000000015",
+        "name": "Tool: Verificar Estado Auth",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1504,
+          640
+        ]
+      },
+      {
+        "parameters": {
+          "sendBody": false,
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/auth/registro?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&nombre={{ $fromAI('nombre', 'Nombre completo del usuario', 'string') }}&email={{ $fromAI('email', 'Correo electronico del usuario', 'string') }}&password={{ $fromAI('password', 'Contrasena elegida por el usuario', 'string') }}",
+          "toolDescription": "Registra un nuevo usuario desde WhatsApp. Usar cuando verificarEstadoAuth indica cuentaExiste=false. Requiere nombre completo, email y contrasena. Devuelve un codigo de verificacion OTP.",
+          "sendQuery": false,
+          "method": "POST",
+          "description": "Registra un nuevo usuario con email, nombre y contrasena. Solo usar cuando el usuario no tiene cuenta y quiere registrarse con email y contrasena."
+        },
+        "id": "fa000002-0000-0000-0000-000000000016",
+        "name": "Tool: Registrar Usuario",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1504,
+          784
+        ]
+      },
+      {
+        "parameters": {
+          "toolDescription": "Genera un nuevo codigo de verificacion OTP cuando la sesion del usuario expiro pero la cuenta existe. Devuelve el codigo que se debe comunicar al usuario.",
+          "method": "POST",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/auth/solicitar-codigo?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}",
+          "description": "Solicita un codigo OTP de verificacion para autenticacion. El codigo se envia al usuario. Usa esta herramienta cuando el usuario ya tiene cuenta y quiere autenticarse con codigo OTP."
+        },
+        "id": "fa000002-0000-0000-0000-000000000017",
+        "name": "Tool: Solicitar Codigo",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1504,
+          928
+        ]
+      },
+      {
+        "parameters": {
+          "sendBody": false,
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/auth/verificar-codigo?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}&codigo={{ $fromAI('codigo', 'Codigo OTP de 6 digitos proporcionado por el usuario', 'string') }}",
+          "toolDescription": "Verifica el codigo OTP proporcionado por el usuario para activar su sesion de WhatsApp. Usar despues de registrarUsuario o solicitarCodigo.",
+          "sendQuery": false,
+          "method": "POST",
+          "description": "Verifica un codigo OTP de 6 digitos ingresado por el usuario para completar la autenticacion. Usa esta herramienta cuando el usuario proporcione el codigo OTP que recibio."
+        },
+        "id": "fa000002-0000-0000-0000-000000000018",
+        "name": "Tool: Verificar Codigo",
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1,
+        "position": [
+          1504,
+          1072
+        ]
+      },
+      {
+        "parameters": {
+          "sessionIdType": "customKey",
+          "sessionKey": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+        },
+        "typeVersion": 1.3,
+        "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+        "id": "fa000002-0000-0000-0000-000000000019",
+        "position": [
+          1568,
+          624
+        ],
+        "name": "Memoria Conversacion",
+        "credentials": {
+          "postgres": {
+            "id": "OG1MbG5NgCExD54F",
+            "name": "PostgreSQL FinanzApp"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "audio-check-001",
+                "leftValue": "={{ $json.tipo }}",
+                "rightValue": "audioMessage",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000020",
+        "name": "Es Audio?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.1,
+        "position": [
+          800,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://evolution-api:8080/chat/getBase64FromMediaMessage/finanzapp",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "${EVOLUTION_API_KEY}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ message: { key: { remoteJid: $(\"Extraer Datos Mensaje\").first().json.remoteJid, fromMe: false, id: $(\"Extraer Datos Mensaje\").first().json.messageId } }, convertToMp4: false }) }}",
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000021",
+        "name": "Descargar Audio",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1040,
+          180
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const response = $input.first().json;\nconst base64Data = response.base64;\nconst mimeType = response.mimetype || 'audio/ogg; codecs=opus';\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n  },\n  binary: {\n    data: {\n      data: base64Data,\n      mimeType: mimeType,\n      fileName: 'audio.ogg',\n    }\n  }\n}];"
+        },
+        "id": "fa000002-0000-0000-0000-000000000022",
+        "name": "Convertir Audio a Binario",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1260,
+          180
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer ${GROQ_API_KEY}"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "multipart-form-data",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "model",
+                "value": "whisper-large-v3-turbo"
+              },
+              {
+                "name": "language",
+                "value": "es"
+              },
+              {
+                "name": "file",
+                "parameterType": "formBinaryData",
+                "inputDataFieldName": "data"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000023",
+        "name": "Transcribir Audio Groq",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1480,
+          180
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const transcripcion = $input.first().json;\nconst texto = transcripcion.text || '';\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    tipo: 'audioMessage',\n    texto: texto,\n    esAudio: true,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n    instanceName: datosOriginales.instanceName,\n    skip: false\n  }\n}];"
+        },
+        "id": "fa000002-0000-0000-0000-000000000024",
+        "name": "Preparar Texto Transcrito",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1700,
+          180
+        ]
+      },
+      {
+        "name": "Tool: Generar Link OAuth",
+        "typeVersion": 1.1,
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "parameters": {
+          "method": "POST",
+          "url": "=http://finanzapp-api:8080/api/v1/whatsapp/auth/generar-link?numeroWhatsapp={{ $('Extraer Datos Mensaje').first().json.telefono }}",
+          "toolDescription": "Genera un enlace de inicio de sesion OAuth (Google/GitHub) para el usuario de WhatsApp. Usa esta herramienta cuando el usuario quiera iniciar sesion con Google o GitHub, o cuando no tenga cuenta y prefiera registrarse con OAuth. Devuelve una URL que el usuario debe abrir en su navegador para autenticarse. Despues de autenticarse, su cuenta queda automaticamente vinculada a su numero de WhatsApp.",
+          "description": "Genera un enlace de autenticacion OAuth para que el usuario inicie sesion con Google o GitHub. Retorna una URL real que debes compartir con el usuario. NUNCA inventes URLs, SIEMPRE usa esta herramienta para obtener el enlace real. Usa esta herramienta cuando el usuario quiera autenticarse con Google o GitHub."
+        },
+        "id": "fa000002-0000-0000-0000-000000000025",
+        "position": [
+          1504,
+          1200
+        ]
+      }
+    ],
+    "connections": {
+      "Enviar Respuesta Evolution API": {
+        "main": [
+          [
+            {
+              "node": "Responder 200 OK a Evolution",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Claude Sonnet 4": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook Evolution API": {
+        "main": [
+          [
+            {
+              "node": "Extraer Datos Mensaje",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Registrar Ingreso": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Verificar Codigo": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Resumen del Mes": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Consultar Balance": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Consultar Metas": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Registrar Gasto": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agente Financiero": {
+        "main": [
+          [
+            {
+              "node": "Enviar Respuesta Evolution API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Memoria Conversacion": {
+        "ai_memory": [
+          [
+            {
+              "type": "ai_memory",
+              "node": "Agente Financiero",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Solicitar Codigo": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Registrar Usuario": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extraer Datos Mensaje": {
+        "main": [
+          [
+            {
+              "node": "Es mensaje valido?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Verificar Estado Auth": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Registrar Ahorro": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Es mensaje valido?": {
+        "main": [
+          [
+            {
+              "node": "Es Audio?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Ignorar y Responder 200",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Es Audio?": {
+        "main": [
+          [
+            {
+              "node": "Descargar Audio",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Descargar Audio": {
+        "main": [
+          [
+            {
+              "node": "Convertir Audio a Binario",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Convertir Audio a Binario": {
+        "main": [
+          [
+            {
+              "node": "Transcribir Audio Groq",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Transcribir Audio Groq": {
+        "main": [
+          [
+            {
+              "node": "Preparar Texto Transcrito",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar Texto Transcrito": {
+        "main": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tool: Generar Link OAuth": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": {},
+    "versionId": "ee651418-e048-4a95-a5b1-322c8e15d0de",
+    "activeVersionId": "ee651418-e048-4a95-a5b1-322c8e15d0de",
+    "versionCounter": 79,
+    "triggerCount": 1,
+    "tags": [],
+    "shared": [
+      {
+        "updatedAt": "2026-03-18T22:01:29.537Z",
+        "createdAt": "2026-03-18T22:01:29.537Z",
+        "role": "workflow:owner",
+        "workflowId": "JL7XSvzAgrCHaFol",
+        "projectId": "x0K6aLlS1plsWZau",
+        "project": {
+          "updatedAt": "2026-03-10T21:56:39.928Z",
+          "createdAt": "2026-03-10T21:55:32.453Z",
+          "id": "x0K6aLlS1plsWZau",
+          "name": "Brayan Villamizar <brayan.villa.fer@gmail.com>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "creatorId": "3ee82c64-db70-4aa9-82ca-10a0f5c6b958"
+        }
+      }
+    ],
+    "versionMetadata": {
+      "name": null,
+      "description": null
+    }
+  }
+]

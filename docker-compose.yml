@@ -111,6 +111,12 @@ services:
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
       TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+      # Evolution API
+      EVOLUTION_API_URL: ${EVOLUTION_API_URL:-http://evolution-api:8080}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
+      EVOLUTION_INSTANCE_NAME: ${EVOLUTION_INSTANCE_NAME:-finanzapp}
+      # Frontend URL
+      FRONTEND_URL: ${FRONTEND_URL:-https://finanzappweb.estevanv.dev}
     ports:
       - "${API_PORT}:8080"
     healthcheck:
@@ -169,12 +175,15 @@ services:
       # Timeout en ms para las peticiones al backend
       FINANZAPP_TIMEOUT: ${FINANZAPP_TIMEOUT:-30000}
       NODE_ENV: production
+      # Transporte: "http" para Streamable HTTP (N8N), omitir para stdio
+      MCP_TRANSPORT: ${MCP_TRANSPORT:-http}
+      # Puerto del servidor HTTP MCP
+      MCP_HTTP_PORT: ${MCP_HTTP_PORT:-3001}
+    ports:
+      - "${MCP_HTTP_PORT:-3001}:3001"
+    command: ["node", "dist/http-server.js"]
     networks:
       - finanzapp-network
-    # El servidor MCP usa stdio; stdin_open + tty permiten que
-    # el proceso permanezca activo aunque no haya un LLM conectado.
-    stdin_open: true
-    tty: true
 
   # ===========================================================
   # 4. finanzapp-web — Frontend Next.js
@@ -206,11 +215,14 @@ services:
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
     ports:
       - "${WEB_PORT:-}:3000"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - finanzapp-network
 
   # ===========================================================
-  # 5. n8n — Motor de automatización de flujos de trabajo
+  # 5. n8n— Motor de automatización de flujos de trabajo
   # ===========================================================
   # Orquesta la integración entre WhatsApp (Evolution API),
   # el agente de IA (Claude via Anthropic) y el backend de
@@ -247,6 +259,8 @@ services:
       # Desactiva la telemetría para entornos de desarrollo
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      # Permite acceso a variables de entorno desde expresiones $env en los workflows
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       # Variables de Evolution API accesibles desde los workflows
       EVOLUTION_API_URL: http://evolution-api:8080
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
