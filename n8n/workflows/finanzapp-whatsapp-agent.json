@@ -1,5 +1,11 @@
 {
+  "updatedAt": "2026-03-22T01:35:25.727Z",
+  "createdAt": "2026-03-18T22:01:29.530Z",
+  "id": "JL7XSvzAgrCHaFol",
   "name": "FinanzApp - Agente Financiero WhatsApp (Evolution API)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -421,11 +427,9 @@
     },
     {
       "parameters": {
-        "serverTransport": "streamableHttp",
-        "endpointUrl": "http://finanzapp-mcp:3001/mcp",
-        "authentication": "none",
-        "toolsToInclude": "all",
-        "options": {}
+        "serverTransport": "sse",
+        "endpointUrl": "http://finanzapp-mcp:3001/sse",
+        "authentication": "none"
       },
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
       "typeVersion": 1.2,
@@ -640,5 +644,700 @@
     "availableInMCP": true
   },
   "staticData": null,
-  "pinData": {}
+  "meta": null,
+  "pinData": {},
+  "versionId": "9f3447df-d26c-4e0e-bf9f-edfc89ac1a03",
+  "activeVersionId": "9f3447df-d26c-4e0e-bf9f-edfc89ac1a03",
+  "versionCounter": 116,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-03-18T22:01:29.537Z",
+      "createdAt": "2026-03-18T22:01:29.537Z",
+      "role": "workflow:owner",
+      "workflowId": "JL7XSvzAgrCHaFol",
+      "projectId": "x0K6aLlS1plsWZau",
+      "project": {
+        "updatedAt": "2026-03-10T21:56:39.928Z",
+        "createdAt": "2026-03-10T21:55:32.453Z",
+        "id": "x0K6aLlS1plsWZau",
+        "name": "Brayan Villamizar <brayan.villa.fer@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "3ee82c64-db70-4aa9-82ca-10a0f5c6b958"
+      }
+    }
+  ],
+  "tags": [],
+  "parentFolder": null,
+  "activeVersion": {
+    "updatedAt": "2026-03-22T01:35:25.728Z",
+    "createdAt": "2026-03-22T01:35:25.728Z",
+    "versionId": "9f3447df-d26c-4e0e-bf9f-edfc89ac1a03",
+    "workflowId": "JL7XSvzAgrCHaFol",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "whatsapp",
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000001",
+        "name": "Webhook Evolution API",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          80,
+          400
+        ],
+        "webhookId": "finanzapp-evolution-webhook"
+      },
+      {
+        "parameters": {
+          "jsCode": "const payload = $input.first().json.body;\nif (payload?.event !== 'messages.upsert') {\n  return [{ json: { skip: true, motivo: `Evento ignorado: ${payload?.event}` } }];\n}\nconst data = payload?.data;\nconst key = data?.key;\nif (key?.fromMe === true) {\n  return [{ json: { skip: true, motivo: 'Mensaje propio (fromMe)' } }];\n}\nconst remoteJid = key?.remoteJid || '';\nif (remoteJid.endsWith('@g.us')) {\n  return [{ json: { skip: true, motivo: 'Mensaje de grupo' } }];\n}\nconst telefono = remoteJid.split('@')[0];\nconst messageType = data?.messageType;\nconst message = data?.message;\nlet texto = null;\nlet esAudio = false;\nif (messageType === 'conversation') {\n  texto = message?.conversation ?? null;\n} else if (messageType === 'extendedTextMessage') {\n  texto = message?.extendedTextMessage?.text ?? null;\n} else if (messageType === 'audioMessage') {\n  esAudio = true;\n}\nreturn [{\n  json: {\n    telefono,\n    remoteJid,\n    tipo: messageType,\n    texto,\n    esAudio,\n    contacto: data?.pushName || telefono,\n    messageId: key?.id,\n    instanceName: payload?.instance,\n    skip: !texto && !esAudio\n  }\n}];"
+        },
+        "id": "fa000002-0000-0000-0000-000000000002",
+        "name": "Extraer Datos Mensaje",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          320,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "8b6d0029-9226-4de9-860f-196e933f2cc0",
+                "leftValue": "={{ $json.skip }}",
+                "rightValue": false,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "false",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "looseTypeValidation": true,
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000003",
+        "name": "Es mensaje valido?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.1,
+        "position": [
+          560,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.texto }}",
+          "options": {
+            "systemMessage": "=Eres FinanzApp, un asistente financiero personal inteligente. Ayudas a los usuarios a gestionar sus finanzas a traves de WhatsApp.\n\nCONTEXTO DEL USUARIO:\n- Numero WhatsApp: {{ $('Extraer Datos Mensaje').first().json.telefono }}\n- Nombre: {{ $('Extraer Datos Mensaje').first().json.contacto }}\n\nREGLA CRITICA - NUNCA INVENTES DATOS:\n- NUNCA generes datos financieros sin llamar las herramientas. Si no llamas la herramienta, el dato NO se guarda en el sistema.\n- Para CADA operacion de registro (ingreso, gasto, ahorro, deuda, inversion), DEBES llamar la herramienta correspondiente.\n- Para CADA consulta de saldo, balance o datos financieros, DEBES llamar la herramienta correspondiente.\n- Si una herramienta falla, informa al usuario del error. NUNCA finjas que la operacion fue exitosa.\n\nFLUJO OBLIGATORIO DE AUTENTICACION:\nAntes de CUALQUIER operacion financiera, SIEMPRE llama a 'verificarEstadoAuth' con el numero del usuario.\n- Si sesionActiva es true: la sesion queda configurada automaticamente. Procede con la operacion.\n- Si sesionActiva es false y cuentaExiste es false: ofrece registro con email/password ('registrarUsuario') o enlace OAuth ('generarLinkOAuth').\n- Si sesionActiva es false y cuentaExiste es true: ofrece codigo OTP ('solicitarCodigo' seguido de 'verificarCodigo') o enlace OAuth.\n\nDespues de autenticacion exitosa, NO necesitas pasar el numero de telefono a las demas herramientas financieras.\n\nMETODOS DE PAGO - DETECTA Y USA EL CORRECTO:\n- EFECTIVO: pago en efectivo, cash, plata en mano. DEFAULT si no se especifica.\n- NEQUI: menciona Nequi, billetera digital Nequi.\n- BANCOLOMBIA: menciona Bancolombia, cuenta Bancolombia, transferencia Bancolombia.\n- OTRO: cualquier otro medio no listado.\nSiempre pasa el parametro 'metodoPago' cuando el usuario menciona donde recibio o pago.\n\nCATEGORIAS DE INGRESOS (usar exactamente):\nTRABAJO_PRINCIPAL, TRABAJO_EXTRA, GANANCIAS_ADICIONALES, INVERSIONES, OTROS\n\nCATEGORIAS DE GASTOS (usar exactamente):\nCOMIDA, PAREJA, COMPRAS, TRANSPORTE, SERVICIOS, ENTRETENIMIENTO, SALUD, EDUCACION, INVERSIONES, ABONO, OTROS\n\nHERRAMIENTAS DISPONIBLES Y CUANDO USARLAS:\n\nIngresos:\n- crearIngreso: registrar nuevo ingreso. Params: monto (obligatorio), categoria, descripcion, metodoPago, fecha, montoAhorro.\n- obtenerIngresos: listar todos los ingresos.\n- obtenerIngresosPorPeriodo: ingresos en rango de fechas.\n- obtenerTotalIngresos: total de ingresos.\n- editarIngreso: modificar ingreso existente (requiere id).\n- eliminarIngreso: eliminar ingreso (requiere id).\n\nGastos:\n- crearEgreso: registrar nuevo gasto. Params: monto (obligatorio), categoria, descripcion, metodoPago, fecha.\n- obtenerGastos: listar todos los gastos.\n- obtenerGastosPorPeriodo: gastos en rango de fechas.\n- obtenerGastosPorCategoria: gastos filtrados por categoria.\n- obtenerTotalGastos: total de gastos.\n- obtenerDesgloseGastos: desglose por categoria.\n- obtenerDesgloseGastosPorPeriodo: desglose por categoria en periodo.\n- editarEgreso: modificar gasto (requiere id).\n- eliminarEgreso: eliminar gasto (requiere id).\n\nAhorros:\n- crearAhorro: registrar ahorro. Puede asociarse a meta con metaId.\n- obtenerAhorros: listar ahorros.\n- obtenerAhorrosPorPeriodo: ahorros en rango de fechas.\n- obtenerTotalAhorros: total ahorrado.\n- obtenerAhorrosPorMeta: ahorros de una meta.\n- editarAhorro: modificar ahorro (requiere id).\n- eliminarAhorro: eliminar ahorro (requiere id).\n\nMetas financieras:\n- crearMeta: crear meta con nombre y montoObjetivo.\n- obtenerMetas: listar metas con progreso.\n- obtenerMetasActivas: solo metas en progreso.\n- registrarProgresoMeta: abonar a meta (metaId, monto).\n- cambiarEstadoMeta: cambiar estado (ACTIVA, COMPLETADA, CANCELADA).\n- editarMeta: modificar meta (requiere id).\n- eliminarMeta: eliminar meta (requiere id).\n\nBalance y analisis:\n- obtenerBalance: balance general (ingresos - gastos - ahorros = disponible).\n- obtenerBalancePorPeriodo: balance en rango de fechas.\n- obtenerBalancePorMetodo: balance por metodo de pago.\n- obtenerResumenFinanciero: resumen completo con balance, desglose y metas.\n- obtenerAnalisisFinanciero: analisis detallado con patrones y recomendaciones.\n\nDeudas y prestamos:\n- crearDeuda: registrar deuda (DEUDA=lo que debo, PRESTAMO=lo que me deben). Params: tipo, descripcion, montoTotal, entidad, categoria.\n- obtenerDeudas: listar deudas (lo que debo).\n- obtenerPrestamos: listar prestamos (lo que me deben).\n- abonarDeuda: abonar a deuda/prestamo (deudaId, monto).\n- obtenerResumenDeudas: resumen total de deudas y prestamos.\n- obtenerAbonosDeuda: historial de abonos.\n- obtenerDeudasPorEstado: filtrar PENDIENTE o COMPLETADA.\n- editarDeuda: modificar deuda (requiere id).\n- eliminarDeuda: eliminar deuda (requiere id).\n\nInversiones:\n- crearInversion: registrar inversion (nombre, monto, retornoEsperado).\n- obtenerInversiones: listar inversiones (filtrable por estado).\n- registrarRetornoInversion: registrar retorno real (inversionId, retornoReal).\n\nOtros:\n- obtenerRegistros: movimientos en un periodo.\n- obtenerCategoriasPersonalizadas: categorias del usuario.\n\nREGLAS DE COMPORTAMIENTO:\n- Responde SIEMPRE en espanol, tono amigable y conciso.\n- Si los datos son claros, actua directamente sin pedir confirmacion.\n- Si falta dato esencial (monto), pregunta antes de actuar.\n- Usa SOLO texto plano sin markdown ni asteriscos.\n- Montos en pesos colombianos (COP), formatea con separador de miles.\n- Para operaciones con ID, primero consulta la lista.\n- \"cuanto tengo\", \"mi saldo\", \"dinero disponible\" -> usa obtenerBalance.\n- Resumen general -> usa obtenerResumenFinanciero.\n- Analisis detallado -> usa obtenerAnalisisFinanciero."
+          }
+        },
+        "id": "fa000002-0000-0000-0000-000000000005",
+        "name": "Agente Financiero",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.7,
+        "position": [
+          1952,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "claude-haiku-4-5-20251001",
+            "mode": "id"
+          },
+          "options": {
+            "maxTokensToSample": 1024
+          }
+        },
+        "id": "fa000002-0000-0000-0000-000000000006",
+        "name": "Claude Sonnet 4",
+        "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+        "typeVersion": 1.3,
+        "position": [
+          1744,
+          624
+        ],
+        "alwaysOutputData": true,
+        "credentials": {
+          "anthropicApi": {
+            "id": "ybr86TveZfUNxXHu",
+            "name": "Anthropic API Key"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE_NAME }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "={{ $env.EVOLUTION_API_KEY }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"number\": \"{{ $('Extraer Datos Mensaje').first().json.telefono }}\",\n  \"text\": {{ JSON.stringify($json.output) }}\n}",
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000013",
+        "name": "Enviar Respuesta Evolution API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2224,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "sessionIdType": "customKey",
+          "sessionKey": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+        },
+        "typeVersion": 1.3,
+        "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+        "id": "fa000002-0000-0000-0000-000000000019",
+        "position": [
+          1920,
+          624
+        ],
+        "name": "Memoria Conversacion",
+        "credentials": {
+          "postgres": {
+            "id": "OG1MbG5NgCExD54F",
+            "name": "PostgreSQL FinanzApp"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "audio-check-001",
+                "leftValue": "={{ $json.tipo }}",
+                "rightValue": "audioMessage",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000020",
+        "name": "Es Audio?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.1,
+        "position": [
+          800,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://evolution-api:8080/chat/getBase64FromMediaMessage/finanzapp",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "${EVOLUTION_API_KEY}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ message: { key: { remoteJid: $(\"Extraer Datos Mensaje\").first().json.remoteJid, fromMe: false, id: $(\"Extraer Datos Mensaje\").first().json.messageId } }, convertToMp4: false }) }}",
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000021",
+        "name": "Descargar Audio",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1040,
+          192
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const response = $input.first().json;\nconst base64Data = response.base64;\nconst mimeType = response.mimetype || 'audio/ogg; codecs=opus';\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n  },\n  binary: {\n    data: {\n      data: base64Data,\n      mimeType: mimeType,\n      fileName: 'audio.ogg',\n    }\n  }\n}];"
+        },
+        "id": "fa000002-0000-0000-0000-000000000022",
+        "name": "Convertir Audio a Binario",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1264,
+          192
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer ${GROQ_API_KEY}"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "multipart-form-data",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "model",
+                "value": "whisper-large-v3-turbo"
+              },
+              {
+                "name": "language",
+                "value": "es"
+              },
+              {
+                "parameterType": "formBinaryData",
+                "name": "file",
+                "inputDataFieldName": "data"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000023",
+        "name": "Transcribir Audio Groq",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1488,
+          192
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const transcripcion = $input.first().json;\nconst texto = transcripcion.text || '';\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    tipo: 'audioMessage',\n    texto: texto,\n    esAudio: true,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n    instanceName: datosOriginales.instanceName,\n    skip: false\n  }\n}];"
+        },
+        "id": "fa000002-0000-0000-0000-000000000024",
+        "name": "Preparar Texto Transcrito",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1712,
+          192
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://finanzapp-api:8080/api/v1/whatsapp/cola/guardar",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "telefono",
+                "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+              },
+              {
+                "name": "texto",
+                "value": "={{ $json.texto }}"
+              },
+              {
+                "name": "contacto",
+                "value": "={{ $('Extraer Datos Mensaje').first().json.contacto }}"
+              },
+              {
+                "name": "messageId",
+                "value": "={{ $('Extraer Datos Mensaje').first().json.messageId }}"
+              },
+              {
+                "name": "esAudio",
+                "value": "={{ $json.esAudio || false }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000035",
+        "name": "Guardar en Cola",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          960,
+          400
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "fa000002-0000-0000-0000-000000000036",
+        "name": "Esperar Acumulacion",
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          1168,
+          400
+        ],
+        "webhookId": "c898f56f-67d1-4cfa-8834-464885115e48"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://finanzapp-api:8080/api/v1/whatsapp/cola/procesar",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "telefono",
+                "value": "={{ $('Extraer Datos Mensaje').first().json.telefono }}"
+              },
+              {
+                "name": "colaId",
+                "value": "={{ $('Guardar en Cola').first().json.data.id }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000037",
+        "name": "Procesar Cola",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1360,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "debounce-check-001",
+                "leftValue": "={{ $json.data.hayMasRecientes }}",
+                "rightValue": false,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "fa000002-0000-0000-0000-000000000038",
+        "name": "Soy Ultimo?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          1520,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const respuesta = $input.first().json;\nconst datosOriginales = $('Extraer Datos Mensaje').first().json;\n\nreturn [{\n  json: {\n    telefono: datosOriginales.telefono,\n    remoteJid: datosOriginales.remoteJid,\n    contacto: datosOriginales.contacto,\n    messageId: datosOriginales.messageId,\n    instanceName: datosOriginales.instanceName,\n    texto: respuesta.data.textoCombinado,\n    mensajesAcumulados: respuesta.data.cantidadMensajes,\n    skip: false\n  }\n}];"
+        },
+        "id": "fa000002-0000-0000-0000-000000000039",
+        "name": "Preparar Texto Combinado",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1712,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "serverTransport": "sse",
+          "endpointUrl": "http://finanzapp-mcp:3001/sse",
+          "authentication": "none"
+        },
+        "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+        "typeVersion": 1.2,
+        "position": [
+          2016,
+          704
+        ],
+        "id": "e1763792-ecce-4534-a7c8-fc1b99a1d477",
+        "name": "MCP FinanzApp"
+      }
+    ],
+    "connections": {
+      "Claude Sonnet 4": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook Evolution API": {
+        "main": [
+          [
+            {
+              "node": "Extraer Datos Mensaje",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agente Financiero": {
+        "main": [
+          [
+            {
+              "node": "Enviar Respuesta Evolution API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Memoria Conversacion": {
+        "ai_memory": [
+          [
+            {
+              "type": "ai_memory",
+              "node": "Agente Financiero",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extraer Datos Mensaje": {
+        "main": [
+          [
+            {
+              "node": "Es mensaje valido?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Es mensaje valido?": {
+        "main": [
+          [
+            {
+              "node": "Es Audio?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Es Audio?": {
+        "main": [
+          [
+            {
+              "node": "Descargar Audio",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Guardar en Cola",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Descargar Audio": {
+        "main": [
+          [
+            {
+              "node": "Convertir Audio a Binario",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Convertir Audio a Binario": {
+        "main": [
+          [
+            {
+              "node": "Transcribir Audio Groq",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Transcribir Audio Groq": {
+        "main": [
+          [
+            {
+              "node": "Preparar Texto Transcrito",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar Texto Transcrito": {
+        "main": [
+          [
+            {
+              "node": "Guardar en Cola",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Guardar en Cola": {
+        "main": [
+          [
+            {
+              "node": "Esperar Acumulacion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Esperar Acumulacion": {
+        "main": [
+          [
+            {
+              "node": "Procesar Cola",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Procesar Cola": {
+        "main": [
+          [
+            {
+              "node": "Soy Ultimo?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Soy Ultimo?": {
+        "main": [
+          [
+            {
+              "node": "Preparar Texto Combinado",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Preparar Texto Combinado": {
+        "main": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "MCP FinanzApp": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente Financiero",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Brayan Villamizar",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-22T01:35:30.845Z",
+        "id": 35,
+        "workflowId": "JL7XSvzAgrCHaFol",
+        "versionId": "9f3447df-d26c-4e0e-bf9f-edfc89ac1a03",
+        "event": "activated",
+        "userId": "3ee82c64-db70-4aa9-82ca-10a0f5c6b958"
+      }
+    ]
+  },
+  "scopes": [
+    "workflow:create",
+    "workflow:delete",
+    "workflow:execute",
+    "workflow:execute-chat",
+    "workflow:list",
+    "workflow:move",
+    "workflow:publish",
+    "workflow:read",
+    "workflow:share",
+    "workflow:unpublish",
+    "workflow:unshare",
+    "workflow:update",
+    "workflow:updateRedactionSetting"
+  ],
+  "checksum": "eb074ff7389383febc9658ff70b69733bd943c2415fa07320991d04b1e39a053"
 }
