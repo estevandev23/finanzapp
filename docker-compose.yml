@@ -265,6 +265,8 @@ services:
       EVOLUTION_API_URL: http://evolution-api:8080
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
       EVOLUTION_INSTANCE_NAME: ${EVOLUTION_INSTANCE_NAME:-finanzapp}
+      # Groq API para transcripción de audio (Whisper)
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
     volumes:
       # Persistencia de workflows, credenciales y configuración
       - n8n_data:/home/node/.n8n
